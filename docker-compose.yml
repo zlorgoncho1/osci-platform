@@ -1,0 +1,208 @@
+# =============================================================================
+# OSCI Platform - Docker Compose (Production)
+# =============================================================================
+# Usage:
+#   1. Copy env.example to .env and update passwords
+#   2. docker compose up -d
+#   3. Access: http://localhost (Web), http://localhost:8080 (Keycloak)
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL - Primary Database
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: osci-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - osci-network
+
+  # ---------------------------------------------------------------------------
+  # Keycloak - Identity & Access Management
+  # ---------------------------------------------------------------------------
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: osci-keycloak
+    restart: unless-stopped
+    command: start --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KEYCLOAK_DB_NAME}
+      KC_DB_USERNAME: ${DB_USER}
+      KC_DB_PASSWORD: ${DB_PASSWORD}
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      KC_HTTP_MANAGEMENT_HEALTH_ENABLED: "false"
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/osci-realm.json:ro
+    healthcheck:
+      # Port 8080 ouvert = Keycloak écoute (l'endpoint /health/ready peut être absent sur l'image standard)
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 120s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - osci-network
+
+  # ---------------------------------------------------------------------------
+  # Keycloak realm init - crée l'admin du realm osci depuis .env
+  # ---------------------------------------------------------------------------
+  keycloak-realm-init:
+    image: alpine:3.19
+    container_name: osci-keycloak-realm-init
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - "apk add --no-cache curl && sh /scripts/init-realm-admin.sh"
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-osci}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KEYCLOAK_REALM_ADMIN_USER: ${KEYCLOAK_REALM_ADMIN_USER}
+      KEYCLOAK_REALM_ADMIN_EMAIL: ${KEYCLOAK_REALM_ADMIN_EMAIL:-}
+      KEYCLOAK_REALM_ADMIN_PASSWORD: ${KEYCLOAK_REALM_ADMIN_PASSWORD}
+    volumes:
+      - ./docker/keycloak/init-realm-admin.sh:/scripts/init-realm-admin.sh:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    networks:
+      - osci-network
+
+  # ---------------------------------------------------------------------------
+  # OPA - Open Policy Agent (Authorization)
+  # ---------------------------------------------------------------------------
+  opa:
+    image: openpolicyagent/opa:latest
+    container_name: osci-opa
+    restart: unless-stopped
+    command: run --server --log-level=info /policies
+    volumes:
+      - ./docker/opa/policies:/policies:ro
+    networks:
+      - osci-network
+
+  # ---------------------------------------------------------------------------
+  # MinIO - Object Storage (Evidence Files)
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: osci-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - osci-network
+
+  # ---------------------------------------------------------------------------
+  # API - NestJS Backend
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: ./apps/api
+    container_name: osci-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      KEYCLOAK_ISSUER: http://keycloak:8080/realms/osci
+      KEYCLOAK_ISSUER_EXTERNAL: ${KEYCLOAK_URL}/realms/osci
+      OPA_URL: http://opa:8181
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: "9000"
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: osci-evidence
+      API_PORT: ${API_PORT}
+      API_CORS_ORIGIN: ${API_CORS_ORIGIN}
+    ports:
+      - "${API_PORT}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      opa:
+        condition: service_started
+      minio:
+        condition: service_started
+    networks:
+      - osci-network
+
+  # ---------------------------------------------------------------------------
+  # Web - Angular Frontend (served via Nginx)
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: ./apps/web
+      args:
+        KEYCLOAK_URL: ${KEYCLOAK_URL}
+        KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+        KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
+        API_URL: ${API_URL}
+    container_name: osci-web
+    restart: unless-stopped
+    environment:
+      KEYCLOAK_URL: ${KEYCLOAK_URL}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
+      API_URL: ${API_URL}
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - osci-network
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  minio_data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  osci-network:
+    driver: bridge
