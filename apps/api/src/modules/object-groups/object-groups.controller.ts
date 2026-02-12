@@ -11,6 +11,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PolicyGuard } from '../../common/guards/policy.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ObjectGroupsService } from './object-groups.service';
 import { CreateObjectGroupDto } from './dto/create-object-group.dto';
 import { UpdateObjectGroupDto } from './dto/update-object-group.dto';
@@ -19,19 +21,24 @@ import { ObjectGroup } from './entities/object-group.entity';
 
 @ApiTags('object-groups')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PolicyGuard)
 @Controller('object-groups')
 export class ObjectGroupsController {
   constructor(private readonly objectGroupsService: ObjectGroupsService) {}
 
   @Get()
-  async findAll(): Promise<ObjectGroup[]> {
-    return this.objectGroupsService.findAll();
+  async findAll(
+    @CurrentUser() user: { userId: string },
+  ): Promise<ObjectGroup[]> {
+    return this.objectGroupsService.findAll(user.userId);
   }
 
   @Post()
-  async create(@Body() dto: CreateObjectGroupDto): Promise<ObjectGroup> {
-    return this.objectGroupsService.create(dto);
+  async create(
+    @Body() dto: CreateObjectGroupDto,
+    @CurrentUser() user: { userId: string },
+  ): Promise<ObjectGroup> {
+    return this.objectGroupsService.create(dto, user.userId);
   }
 
   @Get(':id')

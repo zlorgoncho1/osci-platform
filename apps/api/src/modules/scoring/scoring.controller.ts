@@ -8,12 +8,13 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PolicyGuard } from '../../common/guards/policy.guard';
 import { ScoringService } from './scoring.service';
 import { Score } from './entities/score.entity';
 
 @ApiTags('scores')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PolicyGuard)
 @Controller('scores')
 export class ScoringController {
   constructor(private readonly scoringService: ScoringService) {}

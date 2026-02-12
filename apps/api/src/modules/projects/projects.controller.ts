@@ -12,6 +12,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PolicyGuard } from '../../common/guards/policy.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -21,7 +23,7 @@ import { ProjectStatus } from '../../common/enums';
 
 @ApiTags('projects')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PolicyGuard)
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
@@ -30,15 +32,19 @@ export class ProjectsController {
   @ApiQuery({ name: 'status', enum: ProjectStatus, required: false })
   @ApiQuery({ name: 'ownerId', required: false })
   async findAll(
+    @CurrentUser() user: { userId: string },
     @Query('status') status?: ProjectStatus,
     @Query('ownerId') ownerId?: string,
   ) {
-    return this.projectsService.findAll({ status, ownerId });
+    return this.projectsService.findAll(user.userId, { status, ownerId });
   }
 
   @Post()
-  async create(@Body() dto: CreateProjectDto) {
-    return this.projectsService.create(dto);
+  async create(
+    @Body() dto: CreateProjectDto,
+    @CurrentUser() user: { userId: string },
+  ) {
+    return this.projectsService.create(dto, user.userId);
   }
 
   @Get(':id')

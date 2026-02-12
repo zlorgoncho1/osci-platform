@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
+import { PermissionService } from '../../core/services/permission.service';
 import { ConfirmService } from '../../shared/components/confirm/confirm.service';
 import { ScoreGaugeComponent } from '../../shared/components/score-gauge/score-gauge.component';
 
@@ -35,11 +36,11 @@ import { ScoreGaugeComponent } from '../../shared/components/score-gauge/score-g
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <button (click)="isEditing = !isEditing"
+          <button *ngIf="perm.canGlobal('object', 'update')" (click)="isEditing = !isEditing"
             class="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-zinc-400 font-brand hover:bg-white/5 transition-colors flex items-center gap-2">
             <iconify-icon icon="solar:pen-linear" width="14"></iconify-icon>Edit
           </button>
-          <button (click)="deleteObject()"
+          <button *ngIf="perm.canGlobal('object', 'delete')" (click)="deleteObject()"
             class="px-3 py-1.5 rounded-lg border border-rose-500/20 text-xs text-rose-500 font-brand hover:bg-rose-500/10 transition-colors flex items-center gap-2">
             <iconify-icon icon="solar:trash-bin-trash-linear" width="14"></iconify-icon>Delete
           </button>
@@ -101,7 +102,7 @@ import { ScoreGaugeComponent } from '../../shared/components/score-gauge/score-g
         <div class="col-span-4 glass-panel p-6 flex flex-col items-center justify-center">
           <p class="text-[10px] uppercase tracking-wider text-zinc-500 mb-4">Security Score</p>
           <app-score-gauge [score]="score?.value || 0" size="lg"></app-score-gauge>
-          <button (click)="recomputeScore()"
+          <button *ngIf="perm.canGlobal('object', 'update')" (click)="recomputeScore()"
             class="mt-4 px-3 py-1.5 rounded-lg border border-white/10 text-[10px] text-zinc-400 font-brand hover:bg-white/5 transition-colors flex items-center gap-1">
             <iconify-icon icon="solar:refresh-linear" width="12"></iconify-icon>Recompute
           </button>
@@ -112,7 +113,7 @@ import { ScoreGaugeComponent } from '../../shared/components/score-gauge/score-g
       <div class="glass-panel p-6">
         <div class="flex items-center justify-between mb-4">
           <p class="text-[10px] uppercase tracking-wider text-zinc-500">Evidence</p>
-          <label class="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-zinc-400 hover:bg-white/5 transition-colors cursor-pointer flex items-center gap-2">
+          <label *ngIf="perm.canGlobal('evidence', 'create')" class="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-zinc-400 hover:bg-white/5 transition-colors cursor-pointer flex items-center gap-2">
             <iconify-icon icon="solar:upload-linear" width="14"></iconify-icon>Upload
             <input type="file" class="hidden" (change)="uploadEvidence($event)" />
           </label>
@@ -126,7 +127,7 @@ import { ScoreGaugeComponent } from '../../shared/components/score-gauge/score-g
                 <p class="text-[10px] text-zinc-600 font-mono">{{ ev.createdAt | date:'yyyy-MM-dd HH:mm' }}</p>
               </div>
             </div>
-            <button (click)="downloadEvidence(ev.id)" class="text-[10px] text-zinc-400 hover:text-zinc-200 transition-colors">Download</button>
+            <button *ngIf="perm.canGlobal('evidence', 'read')" (click)="downloadEvidence(ev.id)" class="text-[10px] text-zinc-400 hover:text-zinc-200 transition-colors">Download</button>
           </div>
           <p *ngIf="evidenceList.length === 0" class="text-[10px] text-zinc-600 text-center py-4">No evidence uploaded</p>
         </div>
@@ -164,7 +165,7 @@ import { ScoreGaugeComponent } from '../../shared/components/score-gauge/score-g
               </td>
               <td class="p-3 text-xs text-zinc-400 font-mono">{{ cl.items?.length || 0 }}</td>
               <td class="p-3">
-                <button (click)="runChecklist(cl)"
+                <button *ngIf="perm.canGlobal('checklist_run', 'create')" (click)="runChecklist(cl)"
                   class="px-3 py-1 rounded-lg border border-emerald-500/20 text-[10px] text-emerald-500 font-brand hover:bg-emerald-500/10 transition-colors flex items-center gap-1">
                   <iconify-icon icon="solar:play-linear" width="12"></iconify-icon>Run
                 </button>
@@ -253,6 +254,7 @@ export class ObjectDetailComponent implements OnInit {
     private router: Router,
     private api: ApiService,
     private confirmService: ConfirmService,
+    public perm: PermissionService,
   ) {}
 
   ngOnInit(): void {

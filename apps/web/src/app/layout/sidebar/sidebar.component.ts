@@ -1,7 +1,21 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, OnInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
+import { PermissionService } from '../../core/services/permission.service';
+
+interface NavItem {
+  label: string;
+  icon: string;
+  route: string;
+  resourceType?: string;
+}
+
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
 
 @Component({
   selector: 'app-sidebar',
@@ -26,75 +40,13 @@ import { AuthService } from '../../core/services/auth.service';
 
       <!-- Navigation -->
       <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-6">
-        <!-- Operational -->
-        <div>
-          <p class="text-[10px] uppercase tracking-wider text-zinc-500 px-3 mb-2">Operational</p>
+        <div *ngFor="let section of visibleSections">
+          <p class="text-[10px] uppercase tracking-wider text-zinc-500 px-3 mb-2">{{ section.title }}</p>
           <ul class="space-y-0.5">
-            <li>
-              <a routerLink="/app/cockpit" routerLinkActive="bg-white/[0.07] text-white"
+            <li *ngFor="let item of section.items">
+              <a [routerLink]="item.route" routerLinkActive="bg-white/[0.07] text-white"
                 class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors">
-                <iconify-icon icon="solar:widget-2-linear" width="18"></iconify-icon>Cockpit
-              </a>
-            </li>
-            <li>
-              <a routerLink="/app/objects" routerLinkActive="bg-white/[0.07] text-white"
-                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors">
-                <iconify-icon icon="solar:box-linear" width="18"></iconify-icon>Objects
-              </a>
-            </li>
-            <li>
-              <a routerLink="/app/checklists" routerLinkActive="bg-white/[0.07] text-white"
-                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors">
-                <iconify-icon icon="solar:checklist-linear" width="18"></iconify-icon>Checklists
-              </a>
-            </li>
-            <li>
-              <a routerLink="/app/remediation" routerLinkActive="bg-white/[0.07] text-white"
-                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors">
-                <iconify-icon icon="solar:clipboard-check-linear" width="18"></iconify-icon>Remediation
-              </a>
-            </li>
-            <li>
-              <a routerLink="/app/projects" routerLinkActive="bg-white/[0.07] text-white"
-                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors">
-                <iconify-icon icon="solar:folder-security-linear" width="18"></iconify-icon>Projects
-              </a>
-            </li>
-            <li>
-              <a routerLink="/app/cartography" routerLinkActive="bg-white/[0.07] text-white"
-                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors">
-                <iconify-icon icon="solar:map-linear" width="18"></iconify-icon>Cartography
-              </a>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Governance -->
-        <div>
-          <p class="text-[10px] uppercase tracking-wider text-zinc-500 px-3 mb-2">Governance</p>
-          <ul class="space-y-0.5">
-            <li>
-              <a routerLink="/app/audit" routerLinkActive="bg-white/[0.07] text-white"
-                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors">
-                <iconify-icon icon="solar:document-text-linear" width="18"></iconify-icon>Evidence & Audit
-              </a>
-            </li>
-            <li>
-              <a routerLink="/app/referentiels" routerLinkActive="bg-white/[0.07] text-white"
-                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors">
-                <iconify-icon icon="solar:library-linear" width="18"></iconify-icon>Référentiels
-              </a>
-            </li>
-            <li>
-              <a routerLink="/app/reports" routerLinkActive="bg-white/[0.07] text-white"
-                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors">
-                <iconify-icon icon="solar:chart-square-linear" width="18"></iconify-icon>Reports
-              </a>
-            </li>
-            <li>
-              <a routerLink="/app/incidents" routerLinkActive="bg-white/[0.07] text-white"
-                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 transition-colors">
-                <iconify-icon icon="solar:shield-warning-linear" width="18"></iconify-icon>Incidents
+                <iconify-icon [attr.icon]="item.icon" width="18"></iconify-icon>{{ item.label }}
               </a>
             </li>
           </ul>
@@ -123,22 +75,107 @@ import { AuthService } from '../../core/services/auth.service';
     </aside>
   `,
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit, OnDestroy {
   userName = 'Security Analyst';
   userRole = 'admin';
 
-  constructor(private authService: AuthService) {
+  private allSections: NavSection[] = [
+    {
+      title: 'Operational',
+      items: [
+        { label: 'Cockpit', icon: 'solar:widget-2-linear', route: '/app/cockpit' },
+        { label: 'Objects', icon: 'solar:box-linear', route: '/app/objects', resourceType: 'object' },
+        { label: 'Checklists', icon: 'solar:checklist-linear', route: '/app/checklists', resourceType: 'checklist' },
+        { label: 'Remediation', icon: 'solar:clipboard-check-linear', route: '/app/remediation', resourceType: 'task' },
+        { label: 'Projects', icon: 'solar:folder-security-linear', route: '/app/projects', resourceType: 'project' },
+        { label: 'Cartography', icon: 'solar:map-linear', route: '/app/cartography', resourceType: 'cartography_asset' },
+      ],
+    },
+    {
+      title: 'Governance',
+      items: [
+        { label: 'Evidence & Audit', icon: 'solar:document-text-linear', route: '/app/audit', resourceType: 'audit_log' },
+        { label: 'Référentiels', icon: 'solar:library-linear', route: '/app/referentiels', resourceType: 'referentiel' },
+        { label: 'Reports', icon: 'solar:chart-square-linear', route: '/app/reports', resourceType: 'report' },
+        { label: 'Incidents', icon: 'solar:shield-warning-linear', route: '/app/incidents', resourceType: 'incident' },
+      ],
+    },
+    {
+      title: 'Administration',
+      items: [
+        { label: 'Users', icon: 'solar:users-group-two-rounded-linear', route: '/app/admin/users', resourceType: 'user' },
+        { label: 'User Groups', icon: 'solar:user-plus-rounded-linear', route: '/app/admin/user-groups', resourceType: 'user_group' },
+        { label: 'Roles', icon: 'solar:key-linear', route: '/app/admin/roles', resourceType: 'user' },
+      ],
+    },
+  ];
+
+  visibleSections: NavSection[] = [];
+
+  private permissionsSub?: Subscription;
+
+  constructor(
+    private authService: AuthService,
+    private permissionService: PermissionService,
+  ) {}
+
+  ngOnInit(): void {
+    this.permissionService.loadPermissions().then(() => {
+      this.buildNav();
+    });
+    this.permissionsSub = this.permissionService.permissions$.subscribe(() => {
+      this.buildNav();
+    });
+
     const profile = this.authService.userProfile;
     if (profile) {
       this.userName = profile['preferred_username'] || profile['name'] || 'User';
     }
-    const roles = this.authService.userRoles;
+
+    const me = this.permissionService.me;
+    if (me) {
+      this.userName = me.firstName || me.email || 'User';
+    }
+
+    const roles = this.permissionService.roles;
     if (roles.length > 0) {
-      this.userRole = roles.find(r => ['admin', 'auditor', 'analyst', 'viewer'].includes(r)) || roles[0];
+      this.userRole = roles[0];
+    } else {
+      const jwtRoles = this.authService.userRoles;
+      if (jwtRoles.length > 0) {
+        this.userRole = jwtRoles[0];
+      }
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.permissionsSub?.unsubscribe();
+  }
+
+  private buildNav(): void {
+    this.visibleSections = this.allSections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => {
+          if (!item.resourceType) return true;
+          return this.permissionService.canGlobal(item.resourceType, 'read');
+        }),
+      }))
+      .filter((section) => section.items.length > 0);
+
+    // Update user info
+    const me = this.permissionService.me;
+    if (me) {
+      this.userName = me.firstName || me.email || 'User';
+    }
+    const roles = this.permissionService.roles;
+    if (roles.length > 0) {
+      this.userRole = roles[0];
     }
   }
 
   logout(): void {
+    this.permissionService.clear();
     this.authService.logout();
   }
 }

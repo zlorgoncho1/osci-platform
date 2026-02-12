@@ -15,6 +15,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PolicyGuard } from '../../common/guards/policy.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { EvidenceService } from './evidence.service';
 import { CreateEvidenceDto } from './dto/create-evidence.dto';
@@ -22,7 +23,7 @@ import { Evidence } from './entities/evidence.entity';
 
 @ApiTags('evidence')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PolicyGuard)
 @Controller('evidence')
 export class EvidenceController {
   constructor(private readonly evidenceService: EvidenceService) {}

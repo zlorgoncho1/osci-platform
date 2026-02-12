@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PolicyGuard } from '../../common/guards/policy.guard';
 import { ReferentielsService, ReferentielListResult } from './referentiels.service';
 import { CommunityReferentielsService, CommunityReferentielSummary, ImportResult, ImportChecklistResult } from './community-referentiels.service';
 import { CreateReferentielDto } from './dto/create-referentiel.dto';
@@ -26,7 +27,7 @@ import { ChecklistItem } from '../checklists/entities/checklist-item.entity';
 
 @ApiTags('referentiels')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PolicyGuard)
 @Controller('referentiels')
 export class ReferentielsController {
   constructor(

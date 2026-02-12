@@ -163,3 +163,32 @@ export enum UserRole {
   Developer = 'Developer',
   Viewer = 'Viewer',
 }
+
+export enum ResourceType {
+  Project = 'project',
+  Object = 'object',
+  ObjectGroup = 'object_group',
+  Checklist = 'checklist',
+  ChecklistRun = 'checklist_run',
+  Task = 'task',
+  Evidence = 'evidence',
+  Incident = 'incident',
+  Report = 'report',
+  AuditLog = 'audit_log',
+  Referentiel = 'referentiel',
+  FrameworkControl = 'framework_control',
+  CartographyAsset = 'cartography_asset',
+  CartographyRelation = 'cartography_relation',
+  Integration = 'integration',
+  User = 'user',
+  UserGroup = 'user_group',
+}
+
+export enum Action {
+  Read = 'read',
+  Create = 'create',
+  Update = 'update',
+  Delete = 'delete',
+  Export = 'export',
+  Manage = 'manage',
+}

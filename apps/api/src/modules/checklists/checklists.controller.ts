@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PolicyGuard } from '../../common/guards/policy.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ChecklistsService } from './checklists.service';
 import { CreateChecklistDto } from './dto/create-checklist.dto';
@@ -29,19 +30,24 @@ import { ChecklistRunItem } from './entities/checklist-run-item.entity';
 
 @ApiTags('checklists')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PolicyGuard)
 @Controller('checklists')
 export class ChecklistsController {
   constructor(private readonly checklistsService: ChecklistsService) {}
 
   @Get()
-  async findAll(): Promise<Checklist[]> {
-    return this.checklistsService.findAll();
+  async findAll(
+    @CurrentUser() user: { userId: string },
+  ): Promise<Checklist[]> {
+    return this.checklistsService.findAll(user.userId);
   }
 
   @Post()
-  async create(@Body() dto: CreateChecklistDto): Promise<Checklist> {
-    return this.checklistsService.create(dto);
+  async create(
+    @Body() dto: CreateChecklistDto,
+    @CurrentUser() user: { userId: string },
+  ): Promise<Checklist> {
+    return this.checklistsService.create(dto, user.userId);
   }
 
   // Static routes before parameterized ones
@@ -127,16 +133,16 @@ export class ChecklistsController {
   async startRun(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: StartChecklistRunDto,
-    @CurrentUser() user: { sub: string },
+    @CurrentUser() user: { userId: string },
   ): Promise<ChecklistRun | { runs: ChecklistRun[] }> {
-    if (!user?.sub) {
-      throw new UnauthorizedException('User identity (sub) not found in token');
+    if (!user?.userId) {
+      throw new UnauthorizedException('User identity not found in token');
     }
     if (dto.objectGroupId) {
-      return this.checklistsService.startRunForGroup(id, dto.objectGroupId, user.sub);
+      return this.checklistsService.startRunForGroup(id, dto.objectGroupId, user.userId);
     }
     if (dto.objectId) {
-      return this.checklistsService.startRun(id, dto.objectId, user.sub);
+      return this.checklistsService.startRun(id, dto.objectId, user.userId);
     }
     throw new BadRequestException('Either objectId or objectGroupId must be provided');
   }

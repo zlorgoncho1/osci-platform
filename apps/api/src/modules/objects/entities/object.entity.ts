@@ -30,6 +30,9 @@ export class SecObject {
   metadata!: Record<string, unknown> | null;
 
   @Column({ type: 'uuid', nullable: true })
+  createdById!: string | null;
+
+  @Column({ type: 'uuid', nullable: true })
   parentId!: string | null;
 
   @ManyToOne(() => SecObject, (obj) => obj.children, {

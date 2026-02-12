@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ConfirmService } from '../../shared/components/confirm/confirm.service';
+import { PermissionService } from '../../core/services/permission.service';
 
 @Component({
   selector: 'app-projects-list',
@@ -19,7 +20,7 @@ import { ConfirmService } from '../../shared/components/confirm/confirm.service'
           <h1 class="text-2xl font-brand font-bold text-white">Security Projects</h1>
           <p class="text-xs text-zinc-500 mt-1">Manage and track security workstreams</p>
         </div>
-        <button (click)="showForm = !showForm"
+        <button *ngIf="perm.canGlobal('project', 'create')" (click)="showForm = !showForm"
           class="px-4 py-2 rounded-lg bg-white text-black text-sm font-semibold font-brand hover:bg-zinc-200 transition-colors flex items-center gap-2">
           <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>New Project
         </button>
@@ -109,7 +110,7 @@ import { ConfirmService } from '../../shared/components/confirm/confirm.service'
               <td class="py-3 text-xs text-zinc-500 font-mono">{{ p.startDate | date:'yyyy-MM-dd' }}</td>
               <td class="py-3 text-xs text-zinc-500 font-mono">{{ p.targetEndDate | date:'yyyy-MM-dd' }}</td>
               <td class="py-3 text-xs text-zinc-400 font-mono">{{ p._taskCount || 0 }}</td>
-              <td class="py-3 text-right">
+              <td class="py-3 text-right" *ngIf="perm.canGlobal('project', 'delete')">
                 <button (click)="deleteProject(p.id, $event)"
                   class="p-1.5 rounded-lg hover:bg-white/5 transition-colors">
                   <iconify-icon icon="solar:trash-bin-2-linear" width="14" class="text-zinc-600 hover:text-rose-500"></iconify-icon>
@@ -144,6 +145,7 @@ export class ProjectsListComponent implements OnInit {
     private api: ApiService,
     private authService: AuthService,
     private confirmService: ConfirmService,
+    public perm: PermissionService,
   ) {}
 
   ngOnInit(): void {

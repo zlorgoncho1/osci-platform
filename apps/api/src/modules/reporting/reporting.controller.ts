@@ -12,6 +12,7 @@ import {
 import { Response } from 'express';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PolicyGuard } from '../../common/guards/policy.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ReportingService } from './reporting.service';
 import { CreateReportDto } from './dto/create-report.dto';
@@ -19,7 +20,7 @@ import { Report } from './entities/report.entity';
 
 @ApiTags('reports')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PolicyGuard)
 @Controller('reports')
 export class ReportingController {
   constructor(private readonly reportingService: ReportingService) {}

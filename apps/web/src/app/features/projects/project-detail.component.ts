@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { ConfirmService } from '../../shared/components/confirm/confirm.service';
+import { PermissionService } from '../../core/services/permission.service';
 
 @Component({
   selector: 'app-project-detail',
@@ -58,11 +59,11 @@ import { ConfirmService } from '../../shared/components/confirm/confirm.service'
               <button (click)="editing = false"
                 class="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-zinc-400 font-brand hover:bg-white/5 transition-colors">Cancel</button>
             </div>
-            <button *ngIf="!editing" (click)="startEdit()"
+            <button *ngIf="!editing && perm.canGlobal('project', 'update')" (click)="startEdit()"
               class="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-zinc-400 font-brand hover:bg-white/5 transition-colors flex items-center gap-1">
               <iconify-icon icon="solar:pen-linear" width="12"></iconify-icon>Edit
             </button>
-            <button *ngIf="!editing" (click)="deleteProject()"
+            <button *ngIf="!editing && perm.canGlobal('project', 'delete')" (click)="deleteProject()"
               class="px-3 py-1.5 rounded-lg border border-rose-500/20 text-xs text-rose-500 font-brand hover:bg-rose-500/10 transition-colors flex items-center gap-1">
               <iconify-icon icon="solar:trash-bin-2-linear" width="12"></iconify-icon>Delete
             </button>
@@ -103,7 +104,7 @@ import { ConfirmService } from '../../shared/components/confirm/confirm.service'
         <div class="col-span-8 glass-panel p-6">
           <div class="flex items-center justify-between mb-4">
             <p class="text-[10px] uppercase tracking-wider text-zinc-500">Milestones</p>
-            <button (click)="showMilestoneForm = !showMilestoneForm"
+            <button *ngIf="perm.canGlobal('project', 'update')" (click)="showMilestoneForm = !showMilestoneForm"
               class="px-2 py-1 rounded-lg border border-white/10 text-[10px] text-zinc-400 font-brand hover:bg-white/5 transition-colors flex items-center gap-1">
               <iconify-icon icon="solar:add-circle-linear" width="12"></iconify-icon>Add
             </button>
@@ -128,7 +129,7 @@ import { ConfirmService } from '../../shared/components/confirm/confirm.service'
             <div *ngFor="let m of milestones; let i = index"
               class="flex items-center justify-between p-3 rounded-lg border border-white/5 bg-white/[0.01] hover:bg-white/[0.03] transition-colors">
               <div class="flex items-center gap-3">
-                <button (click)="toggleMilestoneStatus(m)"
+                <button (click)="toggleMilestoneStatus(m)" [disabled]="!perm.canGlobal('project', 'update')"
                   class="w-5 h-5 rounded border flex items-center justify-center transition-colors"
                   [ngClass]="m.status === 'Completed' ? 'bg-emerald-500/20 border-emerald-500/30' : 'border-white/10 hover:border-white/20'">
                   <iconify-icon *ngIf="m.status === 'Completed'" icon="solar:check-read-linear" width="12" class="text-emerald-500"></iconify-icon>
@@ -145,7 +146,7 @@ import { ConfirmService } from '../../shared/components/confirm/confirm.service'
                     'bg-blue-500/10 text-blue-500': m.status === 'InProgress',
                     'bg-emerald-500/10 text-emerald-500': m.status === 'Completed'
                   }">{{ m.status }}</span>
-                <button (click)="deleteMilestone(m.id)"
+                <button *ngIf="perm.canGlobal('project', 'update')" (click)="deleteMilestone(m.id)"
                   class="p-1 rounded hover:bg-white/5 transition-colors">
                   <iconify-icon icon="solar:trash-bin-2-linear" width="12" class="text-zinc-600 hover:text-rose-500"></iconify-icon>
                 </button>
@@ -162,7 +163,7 @@ import { ConfirmService } from '../../shared/components/confirm/confirm.service'
       <div class="glass-panel p-6">
         <div class="flex items-center justify-between mb-4">
           <p class="text-[10px] uppercase tracking-wider text-zinc-500">Project Tasks</p>
-          <button (click)="showTaskForm = !showTaskForm"
+          <button *ngIf="perm.canGlobal('task', 'create')" (click)="showTaskForm = !showTaskForm"
             class="px-2 py-1 rounded-lg border border-white/10 text-[10px] text-zinc-400 font-brand hover:bg-white/5 transition-colors flex items-center gap-1">
             <iconify-icon icon="solar:add-circle-linear" width="12"></iconify-icon>Add Task
           </button>
@@ -226,7 +227,7 @@ import { ConfirmService } from '../../shared/components/confirm/confirm.service'
                 <td class="py-2.5 text-xs text-zinc-500">{{ task.assignedToId || 'Unassigned' }}</td>
                 <td class="py-2.5 text-xs text-zinc-500 font-mono">{{ task.slaDue | date:'MM/dd' }}</td>
                 <td class="py-2.5 text-right">
-                  <button (click)="deleteTask(task.id)"
+                  <button *ngIf="perm.canGlobal('task', 'delete')" (click)="deleteTask(task.id)"
                     class="p-1 rounded hover:bg-white/5 transition-colors">
                     <iconify-icon icon="solar:trash-bin-2-linear" width="12" class="text-zinc-600 hover:text-rose-500"></iconify-icon>
                   </button>
@@ -258,7 +259,7 @@ import { ConfirmService } from '../../shared/components/confirm/confirm.service'
                 <td class="py-2 text-xs text-zinc-500">{{ child.assignedToId || '—' }}</td>
                 <td class="py-2 text-xs text-zinc-500 font-mono">{{ child.slaDue | date:'MM/dd' }}</td>
                 <td class="py-2 text-right">
-                  <button (click)="deleteTask(child.id)"
+                  <button *ngIf="perm.canGlobal('task', 'delete')" (click)="deleteTask(child.id)"
                     class="p-1 rounded hover:bg-white/5 transition-colors">
                     <iconify-icon icon="solar:trash-bin-2-linear" width="10" class="text-zinc-600 hover:text-rose-500"></iconify-icon>
                   </button>
@@ -296,6 +297,7 @@ export class ProjectDetailComponent implements OnInit {
     private router: Router,
     private api: ApiService,
     private confirmService: ConfirmService,
+    public perm: PermissionService,
   ) {}
 
   ngOnInit(): void {

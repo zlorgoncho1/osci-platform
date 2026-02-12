@@ -1,36 +1,56 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere } from 'typeorm';
+import { Repository, FindOptionsWhere, In } from 'typeorm';
 import { SecObject } from './entities/object.entity';
 import { CreateObjectDto } from './dto/create-object.dto';
 import { UpdateObjectDto } from './dto/update-object.dto';
-import { ObjectType } from '../../common/enums';
+import { ObjectType, ResourceType } from '../../common/enums';
+import { AuthorizationService } from '../rbac/authorization.service';
+import { ResourceAccessService } from '../rbac/resource-access.service';
 
 @Injectable()
 export class ObjectsService {
   constructor(
     @InjectRepository(SecObject)
     private readonly objectRepository: Repository<SecObject>,
+    private readonly authorizationService: AuthorizationService,
+    private readonly resourceAccessService: ResourceAccessService,
   ) {}
 
-  async findAll(filters?: {
-    type?: ObjectType;
-    parentId?: string;
-  }): Promise<SecObject[]> {
-    const where: FindOptionsWhere<SecObject> = {};
+  async findAll(
+    userId: string,
+    filters?: { type?: ObjectType; parentId?: string },
+  ): Promise<SecObject[]> {
+    const accessibleIds = await this.authorizationService.getAccessibleResourceIds(
+      userId,
+      ResourceType.Object,
+    );
+
+    const qb = this.objectRepository
+      .createQueryBuilder('o')
+      .leftJoinAndSelect('o.parent', 'parent')
+      .leftJoinAndSelect('o.children', 'children')
+      .orderBy('o.createdAt', 'DESC');
+
+    if (accessibleIds !== 'all') {
+      if (accessibleIds.length === 0) {
+        qb.where('o.createdById = :userId', { userId });
+      } else {
+        qb.where('(o.id IN (:...accessibleIds) OR o.createdById = :userId)', {
+          accessibleIds,
+          userId,
+        });
+      }
+    }
 
     if (filters?.type) {
-      where.type = filters.type;
+      qb.andWhere('o.type = :type', { type: filters.type });
     }
     if (filters?.parentId) {
-      where.parentId = filters.parentId;
+      qb.andWhere('o.parentId = :parentId', { parentId: filters.parentId });
     }
 
-    return this.objectRepository.find({
-      where,
-      relations: ['parent', 'children'],
-      order: { createdAt: 'DESC' },
-    });
+    return qb.getMany();
   }
 
   async findOne(id: string): Promise<SecObject> {
@@ -44,15 +64,24 @@ export class ObjectsService {
     return obj;
   }
 
-  async create(dto: CreateObjectDto): Promise<SecObject> {
+  async create(dto: CreateObjectDto, userId: string): Promise<SecObject> {
     const obj = this.objectRepository.create({
       name: dto.name,
       type: dto.type,
       description: dto.description || null,
       metadata: dto.metadata || null,
       parentId: dto.parentId || null,
+      createdById: userId,
     });
-    return this.objectRepository.save(obj);
+    const saved = await this.objectRepository.save(obj);
+
+    await this.resourceAccessService.createCreatorAccess(
+      ResourceType.Object,
+      saved.id,
+      userId,
+    );
+
+    return saved;
   }
 
   async update(id: string, dto: UpdateObjectDto): Promise<SecObject> {

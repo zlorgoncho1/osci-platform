@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { ConfirmService } from '../../shared/components/confirm/confirm.service';
 import { ToastService } from '../../shared/components/toast/toast.service';
+import { PermissionService } from '../../core/services/permission.service';
 
 const DOMAINS = [
   { value: 'SecurityInfra', label: 'Security Infra' },
@@ -56,15 +57,15 @@ const DOMAINS = [
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <button (click)="showAddControlModal = true"
+          <button *ngIf="perm.canGlobal('framework_control', 'create')" (click)="showAddControlModal = true"
             class="px-3 py-1.5 rounded-lg border border-emerald-500/20 text-xs text-emerald-500 font-brand hover:bg-emerald-500/10 transition-colors flex items-center gap-2">
             <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>Ajouter une exigence
           </button>
-          <button (click)="showImportModal = true"
+          <button *ngIf="perm.canGlobal('framework_control', 'create')" (click)="showImportModal = true"
             class="px-3 py-1.5 rounded-lg border border-blue-500/20 text-xs text-blue-400 font-brand hover:bg-blue-500/10 transition-colors flex items-center gap-2">
             <iconify-icon icon="solar:import-linear" width="14"></iconify-icon>Importer
           </button>
-          <button (click)="deleteReferentiel()"
+          <button *ngIf="perm.canGlobal('referentiel', 'delete')" (click)="deleteReferentiel()"
             class="px-3 py-1.5 rounded-lg border border-rose-500/20 text-xs text-rose-500 font-brand hover:bg-rose-500/10 transition-colors flex items-center gap-2">
             <iconify-icon icon="solar:trash-bin-trash-linear" width="14"></iconify-icon>Delete
           </button>
@@ -101,11 +102,11 @@ const DOMAINS = [
             <p class="text-[10px] text-zinc-600 mt-0.5">Modèles de checklist de référence disponibles — créez, modifiez ou supprimez</p>
           </div>
           <div class="flex items-center gap-2">
-            <button (click)="showCreateReferenceChecklistModal = true"
+            <button *ngIf="perm.canGlobal('checklist', 'create')" (click)="showCreateReferenceChecklistModal = true"
               class="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-xs text-emerald-500 font-brand hover:bg-emerald-500/30 transition-colors flex items-center gap-2">
               <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>Nouvelle checklist de référence
             </button>
-            <button (click)="showCreateChecklistModal = true"
+            <button *ngIf="perm.canGlobal('checklist', 'create')" (click)="showCreateChecklistModal = true"
               class="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-zinc-400 font-brand hover:bg-white/5 transition-colors flex items-center gap-2">
               <iconify-icon icon="solar:document-add-linear" width="14"></iconify-icon>Checklist utilisateur depuis exigences
             </button>
@@ -125,16 +126,16 @@ const DOMAINS = [
             </div>
             <div class="flex items-center gap-2">
               <a [routerLink]="['/app/checklists', cl.id]" class="px-2 py-1 rounded text-[10px] text-blue-400 hover:bg-blue-500/10 font-brand">Modifier</a>
-              <button (click)="deleteChecklist(cl)" class="px-2 py-1 rounded text-[10px] text-rose-500 hover:bg-rose-500/10 font-brand">Supprimer</button>
+              <button *ngIf="perm.canGlobal('checklist', 'delete')" (click)="deleteChecklist(cl)" class="px-2 py-1 rounded text-[10px] text-rose-500 hover:bg-rose-500/10 font-brand">Supprimer</button>
             </div>
           </div>
           <div *ngIf="referentielChecklists?.length === 0" class="p-8 text-center text-xs text-zinc-500">
             <p>Aucune checklist de référence</p>
             <p class="text-[10px] text-zinc-600 mt-1">Créez une checklist de référence ou une checklist utilisateur depuis les exigences</p>
             <div class="flex justify-center gap-3 mt-3">
-              <button (click)="showCreateReferenceChecklistModal = true" class="text-emerald-500 hover:underline text-sm">Nouvelle checklist de référence</button>
-              <span class="text-zinc-600">|</span>
-              <button (click)="showCreateChecklistModal = true" class="text-blue-400 hover:underline text-sm">Checklist utilisateur depuis exigences</button>
+              <button *ngIf="perm.canGlobal('checklist', 'create')" (click)="showCreateReferenceChecklistModal = true" class="text-emerald-500 hover:underline text-sm">Nouvelle checklist de référence</button>
+              <span *ngIf="perm.canGlobal('checklist', 'create')" class="text-zinc-600">|</span>
+              <button *ngIf="perm.canGlobal('checklist', 'create')" (click)="showCreateChecklistModal = true" class="text-blue-400 hover:underline text-sm">Checklist utilisateur depuis exigences</button>
             </div>
           </div>
         </div>
@@ -185,9 +186,9 @@ const DOMAINS = [
                 <p>Aucune exigence</p>
                 <p class="text-[10px] text-zinc-600 mt-1">Ajoutez des exigences manuellement ou importez depuis une checklist existante</p>
                 <div class="flex justify-center gap-2 mt-3">
-                  <button (click)="showAddControlModal = true" class="text-emerald-500 hover:underline text-xs">Ajouter</button>
-                  <span class="text-zinc-600">|</span>
-                  <button (click)="showImportModal = true" class="text-blue-400 hover:underline text-xs">Importer</button>
+                  <button *ngIf="perm.canGlobal('framework_control', 'create')" (click)="showAddControlModal = true" class="text-emerald-500 hover:underline text-xs">Ajouter</button>
+                  <span *ngIf="perm.canGlobal('framework_control', 'create')" class="text-zinc-600">|</span>
+                  <button *ngIf="perm.canGlobal('framework_control', 'create')" (click)="showImportModal = true" class="text-blue-400 hover:underline text-xs">Importer</button>
                 </div>
               </td>
             </tr>
@@ -390,6 +391,7 @@ export class ReferentielDetailComponent implements OnInit {
     private api: ApiService,
     private confirmService: ConfirmService,
     private toast: ToastService,
+    public perm: PermissionService,
   ) {}
 
   ngOnInit(): void {

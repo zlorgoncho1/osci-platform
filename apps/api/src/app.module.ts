@@ -18,6 +18,8 @@ import { UsersModule } from './modules/users/users.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { ObjectGroupsModule } from './modules/object-groups/object-groups.module';
 import { ReferentielsModule } from './modules/referentiels/referentiels.module';
+import { RbacModule } from './modules/rbac/rbac.module';
+import { KeycloakAdminModule } from './modules/keycloak-admin/keycloak-admin.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { GlobalHttpExceptionFilter } from './common/filters/http-exception.filter';
 
@@ -41,6 +43,8 @@ import { GlobalHttpExceptionFilter } from './common/filters/http-exception.filte
     ThrottlerModule.forRoot({
       throttlers: [{ ttl: 60000, limit: 100 }],
     }),
+    KeycloakAdminModule,
+    RbacModule,
     AuthModule,
     ObjectsModule,
     ChecklistsModule,

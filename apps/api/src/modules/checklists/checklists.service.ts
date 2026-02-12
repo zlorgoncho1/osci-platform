@@ -10,13 +10,15 @@ import { CreateChecklistItemDto } from './dto/create-checklist-item.dto';
 import { UpdateChecklistDto } from './dto/update-checklist.dto';
 import { UpdateChecklistItemDto } from './dto/update-checklist-item.dto';
 import { UpdateRunItemDto } from './dto/update-run-item.dto';
-import { RunStatus, RunItemStatus, ChecklistType, Criticality, TaskStatus } from '../../common/enums';
+import { RunStatus, RunItemStatus, ChecklistType, Criticality, TaskStatus, ResourceType } from '../../common/enums';
 import { ReferenceType } from '../../common/enums';
 import { ReferentielType } from '../../common/enums';
 import { Task } from '../tasks/entities/task.entity';
 import { FrameworkControl } from '../referentiels/entities/framework-control.entity';
 import { ScoringService } from '../scoring/scoring.service';
 import { ObjectGroupsService } from '../object-groups/object-groups.service';
+import { AuthorizationService } from '../rbac/authorization.service';
+import { ResourceAccessService } from '../rbac/resource-access.service';
 
 @Injectable()
 export class ChecklistsService {
@@ -35,14 +37,35 @@ export class ChecklistsService {
     private readonly frameworkControlRepository: Repository<FrameworkControl>,
     private readonly scoringService: ScoringService,
     private readonly objectGroupsService: ObjectGroupsService,
+    private readonly authorizationService: AuthorizationService,
+    private readonly resourceAccessService: ResourceAccessService,
   ) {}
 
-  async findAll(): Promise<Checklist[]> {
-    return this.checklistRepository.find({
-      where: { isReference: false },
-      relations: ['items', 'items.frameworkControl'],
-      order: { createdAt: 'DESC' },
-    });
+  async findAll(userId: string): Promise<Checklist[]> {
+    const accessibleIds = await this.authorizationService.getAccessibleResourceIds(
+      userId,
+      ResourceType.Checklist,
+    );
+
+    const qb = this.checklistRepository
+      .createQueryBuilder('c')
+      .leftJoinAndSelect('c.items', 'items')
+      .leftJoinAndSelect('items.frameworkControl', 'fc')
+      .where('c.isReference = :isRef', { isRef: false })
+      .orderBy('c.createdAt', 'DESC');
+
+    if (accessibleIds !== 'all') {
+      if (accessibleIds.length === 0) {
+        qb.andWhere('c.createdById = :userId', { userId });
+      } else {
+        qb.andWhere('(c.id IN (:...accessibleIds) OR c.createdById = :userId)', {
+          accessibleIds,
+          userId,
+        });
+      }
+    }
+
+    return qb.getMany();
   }
 
   async findAllReferences(): Promise<Checklist[]> {
@@ -64,7 +87,7 @@ export class ChecklistsService {
     return checklist;
   }
 
-  async create(dto: CreateChecklistDto): Promise<Checklist> {
+  async create(dto: CreateChecklistDto, userId?: string): Promise<Checklist> {
     const checklist = this.checklistRepository.create({
       title: dto.title,
       version: dto.version || '1.0',
@@ -73,6 +96,7 @@ export class ChecklistsService {
       criticality: dto.criticality,
       applicability: dto.applicability,
       description: dto.description || null,
+      createdById: userId || null,
       items: await Promise.all(
         dto.items.map(async (itemDto, index) => {
           const { referenceType, reference } = await this.resolveReferenceFromControl(
@@ -95,7 +119,17 @@ export class ChecklistsService {
       ),
     });
 
-    return this.checklistRepository.save(checklist);
+    const saved = await this.checklistRepository.save(checklist);
+
+    if (userId) {
+      await this.resourceAccessService.createCreatorAccess(
+        ResourceType.Checklist,
+        saved.id,
+        userId,
+      );
+    }
+
+    return saved;
   }
 
   async startRun(

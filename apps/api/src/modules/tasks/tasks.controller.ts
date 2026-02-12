@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PolicyGuard } from '../../common/guards/policy.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TasksService } from './tasks.service';
 import { TaskCommentsService, CreateTaskCommentDto } from './task-comments.service';
@@ -22,7 +23,7 @@ import { Task } from './entities/task.entity';
 
 @ApiTags('tasks')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PolicyGuard)
 @Controller('tasks')
 export class TasksController {
   constructor(

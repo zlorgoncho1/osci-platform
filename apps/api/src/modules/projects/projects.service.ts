@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere } from 'typeorm';
+import { Repository, FindOptionsWhere, In } from 'typeorm';
 import { SecurityProject } from './entities/security-project.entity';
 import { ProjectMilestone } from './entities/project-milestone.entity';
 import { Task } from '../tasks/entities/task.entity';
@@ -8,7 +8,9 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { CreateMilestoneDto } from './dto/create-milestone.dto';
 import { UpdateMilestoneDto } from './dto/update-milestone.dto';
-import { ProjectStatus, TaskStatus } from '../../common/enums';
+import { ProjectStatus, TaskStatus, ResourceType, Action } from '../../common/enums';
+import { AuthorizationService } from '../rbac/authorization.service';
+import { ResourceAccessService } from '../rbac/resource-access.service';
 
 @Injectable()
 export class ProjectsService {
@@ -19,21 +21,44 @@ export class ProjectsService {
     private readonly milestoneRepo: Repository<ProjectMilestone>,
     @InjectRepository(Task)
     private readonly taskRepo: Repository<Task>,
+    private readonly authorizationService: AuthorizationService,
+    private readonly resourceAccessService: ResourceAccessService,
   ) {}
 
-  async findAll(filters?: {
-    status?: ProjectStatus;
-    ownerId?: string;
-  }): Promise<SecurityProject[]> {
-    const where: FindOptionsWhere<SecurityProject> = {};
-    if (filters?.status) where.status = filters.status;
-    if (filters?.ownerId) where.ownerId = filters.ownerId;
+  async findAll(
+    userId: string,
+    filters?: { status?: ProjectStatus; ownerId?: string },
+  ): Promise<SecurityProject[]> {
+    const accessibleIds = await this.authorizationService.getAccessibleResourceIds(
+      userId,
+      ResourceType.Project,
+    );
 
-    return this.projectRepo.find({
-      where,
-      relations: ['milestones'],
-      order: { createdAt: 'DESC' },
-    });
+    const qb = this.projectRepo
+      .createQueryBuilder('p')
+      .leftJoinAndSelect('p.milestones', 'milestones')
+      .orderBy('p.createdAt', 'DESC');
+
+    if (accessibleIds !== 'all') {
+      // Include resources the user created OR has explicit access to
+      if (accessibleIds.length === 0) {
+        qb.where('p.createdById = :userId', { userId });
+      } else {
+        qb.where('(p.id IN (:...accessibleIds) OR p.createdById = :userId)', {
+          accessibleIds,
+          userId,
+        });
+      }
+    }
+
+    if (filters?.status) {
+      qb.andWhere('p.status = :status', { status: filters.status });
+    }
+    if (filters?.ownerId) {
+      qb.andWhere('p.ownerId = :ownerId', { ownerId: filters.ownerId });
+    }
+
+    return qb.getMany();
   }
 
   async findOne(id: string): Promise<SecurityProject> {
@@ -47,17 +72,27 @@ export class ProjectsService {
     return project;
   }
 
-  async create(dto: CreateProjectDto): Promise<SecurityProject> {
+  async create(dto: CreateProjectDto, userId: string): Promise<SecurityProject> {
     const project = this.projectRepo.create({
       name: dto.name,
       description: dto.description || null,
       status: dto.status || ProjectStatus.Planning,
       ownerId: dto.ownerId,
+      createdById: userId,
       startDate: dto.startDate ? new Date(dto.startDate) : null,
       targetEndDate: dto.targetEndDate ? new Date(dto.targetEndDate) : null,
       objectId: dto.objectId || null,
     });
-    return this.projectRepo.save(project);
+    const saved = await this.projectRepo.save(project);
+
+    // Create ResourceAccess for the creator
+    await this.resourceAccessService.createCreatorAccess(
+      ResourceType.Project,
+      saved.id,
+      userId,
+    );
+
+    return saved;
   }
 
   async update(id: string, dto: UpdateProjectDto): Promise<SecurityProject> {

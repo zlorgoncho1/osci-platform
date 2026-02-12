@@ -327,6 +327,135 @@ export class ApiService {
     return this.http.post<any>(`${this.baseUrl}/referentiels/community/import-checklist`, { folder, checklistIndex });
   }
 
+  // RBAC - Auth Me
+  getAuthMe(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/auth/me`);
+  }
+
+  // RBAC - Roles
+  getRoles(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/roles`);
+  }
+  getRole(id: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/roles/${id}`);
+  }
+  createRole(data: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/roles`, data);
+  }
+  updateRole(id: string, data: any): Observable<any> {
+    return this.http.patch<any>(`${this.baseUrl}/roles/${id}`, data);
+  }
+  deleteRole(id: string): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/roles/${id}`);
+  }
+
+  // RBAC - User Roles
+  getUserRoles(userId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/users/${userId}/roles`);
+  }
+  setUserRoles(userId: string, roleIds: string[]): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/users/${userId}/roles`, { roleIds });
+  }
+
+  // RBAC - Resource Access
+  getResourceAccess(resourceType: string, resourceId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/resources/${resourceType}/${resourceId}/access`);
+  }
+  grantResourceAccess(resourceType: string, resourceId: string, userId: string, actions: string[]): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/resources/${resourceType}/${resourceId}/access`, { userId, actions });
+  }
+  updateResourceAccess(resourceType: string, resourceId: string, userId: string, actions: string[]): Observable<any> {
+    return this.http.patch<any>(`${this.baseUrl}/resources/${resourceType}/${resourceId}/access/${userId}`, { actions });
+  }
+  revokeResourceAccess(resourceType: string, resourceId: string, userId: string): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/resources/${resourceType}/${resourceId}/access/${userId}`);
+  }
+
+  // Users
+  getUsers(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/users`);
+  }
+  getUser(id: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/users/${id}`);
+  }
+  createUser(data: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/users`, data);
+  }
+  updateUser(id: string, data: any): Observable<any> {
+    return this.http.patch<any>(`${this.baseUrl}/users/${id}`, data);
+  }
+  deleteUser(id: string): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/users/${id}`);
+  }
+
+  // Auth
+  changePassword(oldPassword: string, newPassword: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/auth/change-password`, { oldPassword, newPassword });
+  }
+
+  // User Admin Actions
+  resetUserPassword(userId: string, temporaryPassword?: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/users/${userId}/reset-password`, { temporaryPassword });
+  }
+  toggleUserEnabled(userId: string, enabled: boolean): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/users/${userId}/toggle-enabled`, { enabled });
+  }
+  setUserRequiredActions(userId: string, actions: string[]): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/users/${userId}/required-actions`, { actions });
+  }
+  sendUserVerifyEmail(userId: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/users/${userId}/send-verify-email`, {});
+  }
+  mergeUsers(keepUserId: string, removeUserId: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/users/merge`, { keepUserId, removeUserId });
+  }
+
+  // User Permissions (direct)
+  getUserPermissions(userId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/users/${userId}/permissions`);
+  }
+  setUserPermissions(userId: string, permissions: { resourceType: string; actions: string[] }[]): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/users/${userId}/permissions`, { permissions });
+  }
+
+  // User Groups
+  getUserGroups(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/user-groups`);
+  }
+  getUserGroup(id: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/user-groups/${id}`);
+  }
+  createUserGroup(data: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/user-groups`, data);
+  }
+  updateUserGroup(id: string, data: any): Observable<any> {
+    return this.http.patch<any>(`${this.baseUrl}/user-groups/${id}`, data);
+  }
+  deleteUserGroup(id: string): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/user-groups/${id}`);
+  }
+  getGroupMembers(groupId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/user-groups/${groupId}/members`);
+  }
+  addUserGroupMembers(groupId: string, userIds: string[]): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/user-groups/${groupId}/members`, { userIds });
+  }
+  removeUserGroupMember(groupId: string, userId: string): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/user-groups/${groupId}/members/${userId}`);
+  }
+  getGroupRoles(groupId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/user-groups/${groupId}/roles`);
+  }
+  setGroupRoles(groupId: string, roleIds: string[]): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/user-groups/${groupId}/roles`, { roleIds });
+  }
+  getGroupPermissions(groupId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/user-groups/${groupId}/permissions`);
+  }
+  setGroupPermissions(groupId: string, permissions: { resourceType: string; actions: string[] }[]): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/user-groups/${groupId}/permissions`, { permissions });
+  }
+
   // Integrations
   getIntegrations(): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/integrations`);

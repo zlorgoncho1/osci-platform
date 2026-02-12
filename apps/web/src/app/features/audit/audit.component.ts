@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
+import { PermissionService } from '../../core/services/permission.service';
 
 @Component({
   selector: 'app-audit',
@@ -17,7 +18,7 @@ import { ApiService } from '../../core/services/api.service';
           <h1 class="text-2xl font-brand font-bold text-white">Evidence & Audit</h1>
           <p class="text-xs text-zinc-500 mt-1">Immutable audit trail and evidence management</p>
         </div>
-        <button *ngIf="activeTab === 'audit'" (click)="exportCsv()"
+        <button *ngIf="activeTab === 'audit' && perm.canGlobal('audit_log', 'export')" (click)="exportCsv()"
           class="px-4 py-2 rounded-lg border border-white/10 text-sm text-zinc-400 font-brand hover:bg-white/5 transition-colors flex items-center gap-2">
           <iconify-icon icon="solar:download-linear" width="16"></iconify-icon>
           Export CSV
@@ -93,7 +94,7 @@ import { ApiService } from '../../core/services/api.service';
                 </td>
                 <td class="p-4 text-[11px] text-zinc-500 font-mono">{{ formatFileSize(ev.size) }}</td>
                 <td class="p-4">
-                  <button (click)="downloadEvidence(ev)"
+                  <button *ngIf="perm.canGlobal('evidence', 'read')" (click)="downloadEvidence(ev)"
                     class="px-2.5 py-1 rounded border border-white/10 text-[10px] text-zinc-400 font-brand hover:bg-white/5 transition-colors flex items-center gap-1.5">
                     <iconify-icon icon="solar:download-linear" width="14"></iconify-icon>
                     Download
@@ -233,7 +234,7 @@ export class AuditComponent implements OnInit {
     'CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'RUN_CHECKLIST', 'UPLOAD_EVIDENCE',
   ]);
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, public perm: PermissionService) {}
 
   ngOnInit(): void {
     this.loadEvidence();

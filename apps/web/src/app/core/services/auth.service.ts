@@ -1,8 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Injector } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { OAuthService, AuthConfig } from 'angular-oauth2-oidc';
 import { environment } from '../../../environments/environment';
 import { Router } from '@angular/router';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, firstValueFrom } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -12,8 +13,21 @@ export class AuthService {
   /** Resolves when the initial discovery + token exchange is complete */
   readonly isDoneLoading: Promise<boolean>;
 
-  constructor(private oauthService: OAuthService, private router: Router) {
+  private _http?: HttpClient;
+
+  constructor(
+    private oauthService: OAuthService,
+    private router: Router,
+    private injector: Injector,
+  ) {
     this.isDoneLoading = this.configure();
+  }
+
+  private get http(): HttpClient {
+    if (!this._http) {
+      this._http = this.injector.get(HttpClient);
+    }
+    return this._http;
   }
 
   private configure(): Promise<boolean> {
@@ -32,11 +46,11 @@ export class AuthService {
     this.oauthService.setupAutomaticSilentRefresh();
 
     this.oauthService.events.subscribe(() => {
-      this.isAuthenticatedSubject.next(this.oauthService.hasValidAccessToken());
+      this.isAuthenticatedSubject.next(this.isLoggedIn);
     });
 
     return this.oauthService.loadDiscoveryDocumentAndTryLogin().then(() => {
-      const loggedIn = this.oauthService.hasValidAccessToken();
+      const loggedIn = this.isLoggedIn;
       this.isAuthenticatedSubject.next(loggedIn);
 
       // Clean OIDC callback params (state, session_state, code, iss) from URL
@@ -46,25 +60,74 @@ export class AuthService {
       }
 
       return loggedIn;
+    }).catch(() => {
+      // Keycloak unreachable — resolve gracefully so local auth still works
+      this.isAuthenticatedSubject.next(this.isLoggedIn);
+      return false;
     });
   }
 
+  // --- SSO Login ---
+
+  loginSSO(): void {
+    this.oauthService.initCodeFlow();
+  }
+
+  /** @deprecated Use loginSSO() for SSO or loginWithCredentials() for local */
   login(): void {
     this.oauthService.initCodeFlow();
   }
 
-  logout(): void {
-    this.oauthService.logOut();
+  // --- Local Login ---
+
+  async loginWithCredentials(
+    email: string,
+    password: string,
+  ): Promise<{ mustChangePassword: boolean }> {
+    const response = await firstValueFrom(
+      this.http.post<{
+        access_token: string;
+        refresh_token: string;
+        mustChangePassword: boolean;
+      }>(`${environment.apiUrl}/auth/login`, { email, password }),
+    );
+
+    localStorage.setItem('local_access_token', response.access_token);
+    localStorage.setItem('local_refresh_token', response.refresh_token);
+
+    this.isAuthenticatedSubject.next(true);
+
+    return { mustChangePassword: response.mustChangePassword };
   }
 
+  // --- Logout ---
+
+  logout(): void {
+    // Clear local tokens
+    localStorage.removeItem('local_access_token');
+    localStorage.removeItem('local_refresh_token');
+
+    // OAuth logout if OAuth was used
+    if (this.oauthService.hasValidAccessToken()) {
+      this.oauthService.logOut();
+    } else {
+      this.isAuthenticatedSubject.next(false);
+      this.router.navigate(['/login']);
+    }
+  }
+
+  // --- Token management ---
+
   async ensureValidToken(): Promise<string | null> {
-    const accessToken = this.oauthService.getAccessToken();
-    if (accessToken && this.oauthService.hasValidAccessToken()) {
-      return accessToken;
+    // 1. Try OAuth token
+    const oauthToken = this.oauthService.getAccessToken();
+    if (oauthToken && this.oauthService.hasValidAccessToken()) {
+      return oauthToken;
     }
 
-    const refreshToken = this.oauthService.getRefreshToken();
-    if (refreshToken) {
+    // 2. Try OAuth refresh
+    const oauthRefresh = this.oauthService.getRefreshToken();
+    if (oauthRefresh) {
       try {
         await this.oauthService.refreshToken();
         const refreshed = this.oauthService.getAccessToken();
@@ -72,45 +135,63 @@ export class AuthService {
           return refreshed;
         }
       } catch {
-        // fall through to stored-token check
+        // fall through
       }
     }
 
-    return this.getStoredTokenIfValid();
+    // 3. Try local access token
+    const localToken = this.getLocalTokenIfValid();
+    if (localToken) return localToken;
+
+    // 4. Try local refresh
+    const localRefresh = localStorage.getItem('local_refresh_token');
+    if (localRefresh) {
+      try {
+        const response = await firstValueFrom(
+          this.http.post<{ access_token: string }>(
+            `${environment.apiUrl}/auth/refresh`,
+            { refreshToken: localRefresh },
+          ),
+        );
+        localStorage.setItem('local_access_token', response.access_token);
+        return response.access_token;
+      } catch {
+        localStorage.removeItem('local_access_token');
+        localStorage.removeItem('local_refresh_token');
+      }
+    }
+
+    return null;
   }
 
-  private getStoredTokenIfValid(): string | null {
-    const token =
-      sessionStorage.getItem('access_token') ||
-      localStorage.getItem('access_token');
+  private getLocalTokenIfValid(): string | null {
+    const token = localStorage.getItem('local_access_token');
     if (!token) return null;
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const expMs = typeof payload?.exp === 'number' ? payload.exp * 1000 : 0;
-      // 30s clock skew buffer
       if (expMs && expMs > Date.now() + 30000) {
         return token;
       }
     } catch {
-      // fall through to cleanup
+      // invalid token
     }
-    try {
-      sessionStorage.removeItem('access_token');
-      sessionStorage.removeItem('id_token');
-      sessionStorage.removeItem('refresh_token');
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('id_token');
-      localStorage.removeItem('refresh_token');
-    } catch {}
+    localStorage.removeItem('local_access_token');
     return null;
   }
 
   get token(): string | null {
-    return this.oauthService.getAccessToken() || this.getStoredTokenIfValid();
+    return (
+      this.oauthService.getAccessToken() ||
+      this.getLocalTokenIfValid()
+    );
   }
 
   get isLoggedIn(): boolean {
-    return this.oauthService.hasValidAccessToken();
+    return (
+      this.oauthService.hasValidAccessToken() ||
+      !!this.getLocalTokenIfValid()
+    );
   }
 
   get userProfile(): any {
@@ -119,11 +200,11 @@ export class AuthService {
   }
 
   get userRoles(): string[] {
-    const token = this.oauthService.getAccessToken();
+    const token = this.token;
     if (!token) return [];
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload['realm_access']?.roles || [];
+      return payload['realm_access']?.roles || payload['roles'] || [];
     } catch {
       return [];
     }

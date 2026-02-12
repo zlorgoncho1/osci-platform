@@ -37,6 +37,13 @@ export class AuthInterceptor implements HttpInterceptor {
       return next.handle(req);
     }
 
+    // Skip auth for public endpoints to avoid circular token refresh
+    const isPublicAuth =
+      req.url.includes('/auth/login') || req.url.includes('/auth/refresh');
+    if (isPublicAuth) {
+      return next.handle(req);
+    }
+
     const auth = this.getAuthService();
     const done = auth.isDoneLoading;
     const done$ = done && typeof done.then === 'function' ? from(done) : of(true);

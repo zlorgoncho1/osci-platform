@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { ConfirmService } from '../../shared/components/confirm/confirm.service';
+import { PermissionService } from '../../core/services/permission.service';
 
 @Component({
   selector: 'app-checklist-detail',
@@ -36,11 +37,11 @@ import { ConfirmService } from '../../shared/components/confirm/confirm.service'
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <button *ngIf="!isEditing" (click)="openRunModal()"
+          <button *ngIf="!isEditing && perm.canGlobal('checklist_run', 'create')" (click)="openRunModal()"
             class="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-brand font-semibold hover:bg-emerald-600 transition-colors flex items-center gap-2">
             <iconify-icon icon="solar:play-linear" width="14"></iconify-icon>Start Run
           </button>
-          <button *ngIf="!isEditing" (click)="enterEditMode()"
+          <button *ngIf="!isEditing && perm.canGlobal('checklist', 'update')" (click)="enterEditMode()"
             class="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-zinc-400 font-brand hover:bg-white/5 transition-colors flex items-center gap-2">
             <iconify-icon icon="solar:pen-linear" width="14"></iconify-icon>Edit
           </button>
@@ -50,7 +51,7 @@ import { ConfirmService } from '../../shared/components/confirm/confirm.service'
           </button>
           <button *ngIf="isEditing" (click)="cancelEdit()"
             class="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-zinc-400 font-brand hover:bg-white/5 transition-colors">Cancel</button>
-          <button (click)="deleteChecklist()"
+          <button *ngIf="perm.canGlobal('checklist', 'delete')" (click)="deleteChecklist()"
             class="px-3 py-1.5 rounded-lg border border-rose-500/20 text-xs text-rose-500 font-brand hover:bg-rose-500/10 transition-colors flex items-center gap-2">
             <iconify-icon icon="solar:trash-bin-trash-linear" width="14"></iconify-icon>Delete
           </button>
@@ -181,7 +182,7 @@ import { ConfirmService } from '../../shared/components/confirm/confirm.service'
                   Latest: {{ obj.latestScore | number:'1.0-0' }}%
                 </span>
               </div>
-              <button (click)="detachObject(obj.id)" title="Détacher cet objet"
+              <button *ngIf="perm.canGlobal('checklist', 'update')" (click)="detachObject(obj.id)" title="Détacher cet objet"
                 class="p-1.5 rounded-lg border border-white/10 hover:bg-rose-500/10 hover:border-rose-500/20 transition-colors">
                 <iconify-icon icon="solar:link-broken-linear" width="14" class="text-zinc-500 hover:text-rose-500"></iconify-icon>
               </button>
@@ -200,7 +201,7 @@ import { ConfirmService } from '../../shared/components/confirm/confirm.service'
               [ngClass]="showImportPanel ? 'text-blue-400' : 'text-blue-500/70 hover:text-blue-400'">
               <iconify-icon icon="solar:library-linear" width="12"></iconify-icon>Import from Reference
             </button>
-            <button (click)="addItem()"
+            <button *ngIf="perm.canGlobal('checklist', 'update')" (click)="addItem()"
               class="text-[10px] text-emerald-500 hover:text-emerald-400 transition-colors flex items-center gap-1">
               <iconify-icon icon="solar:add-circle-linear" width="12"></iconify-icon>Add Item
             </button>
@@ -348,7 +349,7 @@ import { ConfirmService } from '../../shared/components/confirm/confirm.service'
               </td>
               <td class="p-3 text-xs text-zinc-400">{{ item.expectedEvidence || '---' }}</td>
               <td *ngIf="isEditing" class="p-3 text-center">
-                <button (click)="removeItem(item, i)" class="p-1.5 rounded-lg hover:bg-rose-500/10 border border-rose-500/20 transition-colors inline-flex items-center">
+                <button *ngIf="perm.canGlobal('checklist', 'update')" (click)="removeItem(item, i)" class="p-1.5 rounded-lg hover:bg-rose-500/10 border border-rose-500/20 transition-colors inline-flex items-center">
                   <iconify-icon icon="solar:trash-bin-trash-linear" width="14" class="text-rose-500"></iconify-icon>
                 </button>
               </td>
@@ -487,6 +488,7 @@ export class ChecklistDetailComponent implements OnInit {
     private router: Router,
     private api: ApiService,
     private confirmService: ConfirmService,
+    public perm: PermissionService,
   ) {}
 
   ngOnInit(): void {

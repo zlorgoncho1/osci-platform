@@ -45,6 +45,9 @@ export class Checklist {
   @JoinColumn({ name: 'referentielId' })
   referentiel!: Referentiel | null;
 
+  @Column({ type: 'uuid', nullable: true })
+  createdById!: string | null;
+
   @Column({ type: 'text', nullable: true })
   description!: string | null;
 

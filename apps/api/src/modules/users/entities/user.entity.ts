@@ -11,8 +11,8 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ unique: true })
-  keycloakId!: string;
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  keycloakId!: string | null;
 
   @Column()
   email!: string;
@@ -25,6 +25,15 @@ export class User {
 
   @Column({ type: 'simple-json' })
   roles!: string[];
+
+  @Column({ type: 'varchar', nullable: true, select: false })
+  passwordHash!: string | null;
+
+  @Column({ type: 'boolean', default: false })
+  mustChangePassword!: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  enabled!: boolean;
 
   @Column({ type: 'timestamp', nullable: true })
   lastLoginAt!: Date | null;

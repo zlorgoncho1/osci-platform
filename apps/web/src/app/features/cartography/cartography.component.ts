@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { ConfirmService } from '../../shared/components/confirm/confirm.service';
+import { PermissionService } from '../../core/services/permission.service';
 import { ScoreGaugeComponent } from '../../shared/components/score-gauge/score-gauge.component';
 import { TopologyGraphComponent } from './topology-graph.component';
 import { TopologyToolbarComponent, ASSET_TYPES, RELATION_TYPES } from './topology-toolbar.component';
@@ -45,12 +46,12 @@ import { Subscription } from 'rxjs';
               Table
             </button>
           </div>
-          <button (click)="openAddAssetModal()"
+          <button *ngIf="perm.canGlobal('cartography_asset', 'create')" (click)="openAddAssetModal()"
             class="px-4 py-2 bg-white text-black rounded-lg text-sm font-brand font-semibold hover:bg-zinc-200 transition-colors flex items-center gap-2">
             <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
             Add Asset
           </button>
-          <button (click)="showRelationModal = true" [disabled]="assets.length < 2"
+          <button *ngIf="perm.canGlobal('cartography_relation', 'create')" (click)="showRelationModal = true" [disabled]="assets.length < 2"
             class="px-4 py-2 rounded-lg border border-white/10 text-sm text-zinc-400 font-brand hover:bg-white/5 transition-colors flex items-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed">
             <iconify-icon icon="solar:link-linear" width="16"></iconify-icon>
             New Relation
@@ -218,7 +219,7 @@ import { Subscription } from 'rxjs';
                   <td class="p-4 text-xs text-zinc-400">{{ asset.object?.description || asset.description || '---' }}</td>
                   <td class="p-4 text-xs text-zinc-500 font-mono">{{ getRelationCount(asset.id) }}</td>
                   <td class="p-4 text-right">
-                    <button (click)="removeAsset(asset.id, $event)"
+                    <button *ngIf="perm.canGlobal('cartography_asset', 'delete')" (click)="removeAsset(asset.id, $event)"
                       class="p-1.5 rounded-lg hover:bg-rose-500/10 border border-rose-500/20 transition-colors flex items-center gap-1 ml-auto">
                       <iconify-icon icon="solar:trash-bin-trash-linear" width="14" class="text-rose-500"></iconify-icon>
                     </button>
@@ -242,7 +243,7 @@ import { Subscription } from 'rxjs';
                 <iconify-icon icon="solar:arrow-right-linear" width="12" class="text-zinc-600 flex-shrink-0"></iconify-icon>
                 <span class="text-zinc-300 truncate">{{ getAssetDisplayName(rel.targetAssetId) }}</span>
                 <span class="ml-auto text-zinc-600 flex-shrink-0">{{ rel.relationType }}</span>
-                <button (click)="removeRelation(rel.id)" class="p-0.5 rounded hover:bg-white/5 transition-colors flex-shrink-0">
+                <button *ngIf="perm.canGlobal('cartography_relation', 'delete')" (click)="removeRelation(rel.id)" class="p-0.5 rounded hover:bg-white/5 transition-colors flex-shrink-0">
                   <iconify-icon icon="solar:close-circle-linear" width="12" class="text-zinc-600 hover:text-rose-500"></iconify-icon>
                 </button>
               </div>
@@ -304,7 +305,7 @@ import { Subscription } from 'rxjs';
                 <option value="Critical">Critical</option>
               </select>
             </div>
-            <button (click)="createStandaloneAsset()" [disabled]="!newAsset.name.trim()"
+            <button *ngIf="perm.canGlobal('cartography_asset', 'create')" (click)="createStandaloneAsset()" [disabled]="!newAsset.name.trim()"
               class="mt-2 px-3 py-1.5 rounded-lg border border-white/10 text-xs text-zinc-400 font-brand hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
               Create Standalone
             </button>
@@ -407,7 +408,7 @@ export class CartographyComponent implements OnInit, OnDestroy {
 
   private subs: Subscription[] = [];
 
-  constructor(private api: ApiService, private confirmService: ConfirmService) {}
+  constructor(private api: ApiService, private confirmService: ConfirmService, public perm: PermissionService) {}
 
   ngOnInit(): void {
     this.loadData();

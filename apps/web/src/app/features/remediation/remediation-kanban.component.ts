@@ -10,6 +10,7 @@ import {
 } from '@angular/cdk/drag-drop';
 import { ApiService } from '../../core/services/api.service';
 import { ConfirmService } from '../../shared/components/confirm/confirm.service';
+import { PermissionService } from '../../core/services/permission.service';
 
 interface KanbanColumn {
   id: string;
@@ -58,7 +59,7 @@ interface IncidentColumn {
             <option *ngFor="let g of objectGroups" [value]="g.id">{{ g.name }}</option>
           </select>
           <span class="text-[10px] font-mono text-zinc-600">{{ totalTasks }} tasks</span>
-          <button (click)="showCreateForm = true"
+          <button *ngIf="perm.canGlobal('task', 'create')" (click)="showCreateForm = true"
             class="px-3 py-1.5 rounded-lg bg-white text-black text-xs font-brand font-semibold hover:bg-zinc-200 transition-colors flex items-center gap-2">
             <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>New Task
           </button>
@@ -128,7 +129,7 @@ interface IncidentColumn {
             class="min-h-[400px] space-y-3 p-2 rounded-xl border border-white/5 bg-white/[0.01]"
           >
             <!-- Task card -->
-            <div *ngFor="let task of col.tasks" cdkDrag
+            <div *ngFor="let task of col.tasks" cdkDrag [cdkDragDisabled]="!perm.canGlobal('task', 'update')"
               (click)="openTaskDetail(task)"
               class="glass-panel p-4 cursor-grab active:cursor-grabbing">
               <!-- Priority bar -->
@@ -200,7 +201,7 @@ interface IncidentColumn {
             (cdkDropListDropped)="onIncidentDrop($event, col)"
             class="min-h-[400px] space-y-3 p-2 rounded-xl border border-white/5 bg-white/[0.01]"
           >
-            <div *ngFor="let inc of col.incidents" cdkDrag
+            <div *ngFor="let inc of col.incidents" cdkDrag [cdkDragDisabled]="!perm.canGlobal('incident', 'update')"
               class="glass-panel p-4 cursor-grab active:cursor-grabbing">
               <div class="h-0.5 rounded-full mb-3 -mt-1"
                 [ngClass]="{
@@ -301,7 +302,7 @@ interface IncidentColumn {
                 }">{{ selectedTask.status }}</span>
             </div>
             <div class="flex items-center gap-2">
-              <button *ngIf="!editingTask" (click)="startEditTask()"
+              <button *ngIf="!editingTask && perm.canGlobal('task', 'update')" (click)="startEditTask()"
                 class="p-1.5 rounded hover:bg-white/5 transition-colors">
                 <iconify-icon icon="solar:pen-linear" width="16" class="text-zinc-500"></iconify-icon>
               </button>
@@ -309,7 +310,7 @@ interface IncidentColumn {
                 class="px-3 py-1 rounded-lg bg-white text-black text-xs font-semibold font-brand hover:bg-zinc-200 transition-colors">Save</button>
               <button *ngIf="editingTask" (click)="editingTask = false"
                 class="px-3 py-1 rounded-lg border border-white/10 text-xs text-zinc-400 font-brand hover:bg-white/5 transition-colors">Cancel</button>
-              <button (click)="deleteTask(selectedTask.id)"
+              <button *ngIf="perm.canGlobal('task', 'delete')" (click)="deleteTask(selectedTask.id)"
                 class="p-1.5 rounded hover:bg-white/5 transition-colors">
                 <iconify-icon icon="solar:trash-bin-2-linear" width="16" class="text-zinc-600 hover:text-rose-500"></iconify-icon>
               </button>
@@ -411,7 +412,7 @@ interface IncidentColumn {
                   <span class="text-[10px] text-zinc-500">{{ c.authorId || 'System' }}</span>
                   <div class="flex items-center gap-2">
                     <span class="text-[10px] text-zinc-600 font-mono">{{ c.createdAt | date:'yyyy-MM-dd HH:mm' }}</span>
-                    <button (click)="deleteComment(c.id)" class="p-0.5 rounded hover:bg-white/5">
+                    <button *ngIf="perm.canGlobal('task', 'update')" (click)="deleteComment(c.id)" class="p-0.5 rounded hover:bg-white/5">
                       <iconify-icon icon="solar:close-circle-linear" width="10" class="text-zinc-700 hover:text-rose-500"></iconify-icon>
                     </button>
                   </div>
@@ -421,7 +422,7 @@ interface IncidentColumn {
               <p *ngIf="taskComments.length === 0" class="text-[10px] text-zinc-600 text-center py-2">No comments yet</p>
             </div>
             <!-- Add comment -->
-            <div class="flex gap-2">
+            <div *ngIf="perm.canGlobal('task', 'update')" class="flex gap-2">
               <input type="text" [(ngModel)]="newComment" placeholder="Add a comment..."
                 (keydown.enter)="addComment()"
                 class="flex-1 bg-zinc-900 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-zinc-300 placeholder-zinc-600 focus:border-white/20 focus:outline-none transition-colors" />
@@ -482,7 +483,7 @@ export class RemediationKanbanComponent implements OnInit {
   showCreateForm = false;
   newTask: any = { title: '', description: '', priority: 'Medium', slaDue: '', projectId: '' };
 
-  constructor(private api: ApiService, private confirmService: ConfirmService) {}
+  constructor(private api: ApiService, private confirmService: ConfirmService, public perm: PermissionService) {}
 
   ngOnInit(): void {
     this.loadProjects();
@@ -599,6 +600,7 @@ export class RemediationKanbanComponent implements OnInit {
   }
 
   onIncidentDrop(event: CdkDragDrop<any[]>, targetColumn: IncidentColumn): void {
+    if (!this.perm.canGlobal('incident', 'update')) return;
     if (event.previousContainer === event.container) {
       moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
     } else {
@@ -626,6 +628,7 @@ export class RemediationKanbanComponent implements OnInit {
   }
 
   onDrop(event: CdkDragDrop<any[]>, targetColumn: KanbanColumn): void {
+    if (!this.perm.canGlobal('task', 'update')) return;
     if (event.previousContainer === event.container) {
       moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
     } else {

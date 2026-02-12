@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
+import { PermissionService } from '../../core/services/permission.service';
 
 @Component({
   selector: 'app-objects-list',
@@ -17,12 +18,12 @@ import { ApiService } from '../../core/services/api.service';
           <h1 class="text-2xl font-brand font-bold text-white">Objects</h1>
           <p class="text-xs text-zinc-500 mt-1">Managed security objects inventory</p>
         </div>
-        <button *ngIf="activeTab === 'objects'" (click)="showCreateModal = true"
+        <button *ngIf="activeTab === 'objects' && perm.canGlobal('object', 'create')" (click)="showCreateModal = true"
           class="px-4 py-2 bg-white text-black rounded-lg text-sm font-brand font-semibold hover:bg-zinc-200 transition-colors flex items-center gap-2">
           <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
           New Object
         </button>
-        <button *ngIf="activeTab === 'groups'" (click)="showCreateGroupModal = true"
+        <button *ngIf="activeTab === 'groups' && perm.canGlobal('object_group', 'create')" (click)="showCreateGroupModal = true"
           class="px-4 py-2 bg-white text-black rounded-lg text-sm font-brand font-semibold hover:bg-zinc-200 transition-colors flex items-center gap-2">
           <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
           New Group
@@ -235,7 +236,7 @@ export class ObjectsListComponent implements OnInit {
   showCreateGroupModal = false;
   newGroup = { name: '', description: '' };
 
-  constructor(private api: ApiService, private router: Router) {}
+  constructor(private api: ApiService, private router: Router, public perm: PermissionService) {}
 
   ngOnInit(): void {
     this.loadObjects();

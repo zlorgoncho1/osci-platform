@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { ConfirmService } from '../../shared/components/confirm/confirm.service';
 import { ToastService } from '../../shared/components/toast/toast.service';
+import { PermissionService } from '../../core/services/permission.service';
 
 @Component({
   selector: 'app-checklists-list',
@@ -20,12 +21,12 @@ import { ToastService } from '../../shared/components/toast/toast.service';
           <p class="text-xs text-zinc-500 mt-1">Security assessment templates</p>
         </div>
         <div class="flex items-center gap-2">
-          <button *ngIf="selectedIds.size > 0" (click)="bulkDelete()"
+          <button *ngIf="selectedIds.size > 0 && perm.canGlobal('checklist', 'delete')" (click)="bulkDelete()"
             class="px-4 py-2 rounded-lg border border-rose-500/20 text-sm text-rose-500 font-brand font-semibold hover:bg-rose-500/10 transition-colors flex items-center gap-2">
             <iconify-icon icon="solar:trash-bin-trash-linear" width="16"></iconify-icon>
             Delete ({{ selectedIds.size }})
           </button>
-          <button (click)="showCreateModal = true"
+          <button *ngIf="perm.canGlobal('checklist', 'create')" (click)="showCreateModal = true"
             class="px-4 py-2 bg-white text-black rounded-lg text-sm font-brand font-semibold hover:bg-zinc-200 transition-colors flex items-center gap-2">
             <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
             New Checklist
@@ -89,11 +90,11 @@ import { ToastService } from '../../shared/components/toast/toast.service';
               <td class="p-4 text-xs text-zinc-400 font-mono">{{ cl.items?.length || 0 }}</td>
               <td class="p-4">
                 <div class="flex items-center gap-2">
-                  <button (click)="openRunModal(cl)"
+                  <button *ngIf="perm.canGlobal('checklist_run', 'create')" (click)="openRunModal(cl)"
                     class="px-3 py-1 rounded-lg border border-emerald-500/20 text-[10px] text-emerald-500 font-brand hover:bg-emerald-500/10 transition-colors flex items-center gap-1">
                     <iconify-icon icon="solar:play-linear" width="12"></iconify-icon>Run
                   </button>
-                  <button (click)="deleteSingle(cl)"
+                  <button *ngIf="perm.canGlobal('checklist', 'delete')" (click)="deleteSingle(cl)"
                     class="p-1 rounded hover:bg-white/5 transition-colors">
                     <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="14" class="text-zinc-600 hover:text-rose-500"></iconify-icon>
                   </button>
@@ -381,7 +382,7 @@ export class ChecklistsListComponent implements OnInit {
   loadingRefItems = false;
   importSearch = '';
 
-  constructor(private api: ApiService, private router: Router, private confirmService: ConfirmService, private toast: ToastService) {}
+  constructor(private api: ApiService, private router: Router, private confirmService: ConfirmService, private toast: ToastService, public perm: PermissionService) {}
 
   ngOnInit(): void {
     this.loadChecklists();

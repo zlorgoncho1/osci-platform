@@ -20,6 +20,9 @@ export class ObjectGroup {
   @Column({ type: 'text', nullable: true })
   description!: string | null;
 
+  @Column({ type: 'uuid', nullable: true })
+  createdById!: string | null;
+
   @ManyToMany(() => SecObject, (obj) => obj.groups)
   @JoinTable({
     name: 'object_group_members',

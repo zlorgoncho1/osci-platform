@@ -37,6 +37,9 @@ export class SecurityProject {
   targetEndDate!: Date | null;
 
   @Column({ type: 'uuid', nullable: true })
+  createdById!: string | null;
+
+  @Column({ type: 'uuid', nullable: true })
   objectId!: string | null;
 
   @ManyToOne(() => SecObject, { nullable: true, onDelete: 'SET NULL' })

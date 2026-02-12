@@ -6,6 +6,9 @@ import { SecObject } from '../objects/entities/object.entity';
 import { CreateObjectGroupDto } from './dto/create-object-group.dto';
 import { UpdateObjectGroupDto } from './dto/update-object-group.dto';
 import { ScoringService } from '../scoring/scoring.service';
+import { ResourceType } from '../../common/enums';
+import { AuthorizationService } from '../rbac/authorization.service';
+import { ResourceAccessService } from '../rbac/resource-access.service';
 
 @Injectable()
 export class ObjectGroupsService {
@@ -15,13 +18,33 @@ export class ObjectGroupsService {
     @InjectRepository(SecObject)
     private readonly objectRepository: Repository<SecObject>,
     private readonly scoringService: ScoringService,
+    private readonly authorizationService: AuthorizationService,
+    private readonly resourceAccessService: ResourceAccessService,
   ) {}
 
-  async findAll(): Promise<ObjectGroup[]> {
-    return this.groupRepository.find({
-      relations: ['objects'],
-      order: { createdAt: 'DESC' },
-    });
+  async findAll(userId: string): Promise<ObjectGroup[]> {
+    const accessibleIds = await this.authorizationService.getAccessibleResourceIds(
+      userId,
+      ResourceType.ObjectGroup,
+    );
+
+    const qb = this.groupRepository
+      .createQueryBuilder('g')
+      .leftJoinAndSelect('g.objects', 'objects')
+      .orderBy('g.createdAt', 'DESC');
+
+    if (accessibleIds !== 'all') {
+      if (accessibleIds.length === 0) {
+        qb.where('g.createdById = :userId', { userId });
+      } else {
+        qb.where('(g.id IN (:...accessibleIds) OR g.createdById = :userId)', {
+          accessibleIds,
+          userId,
+        });
+      }
+    }
+
+    return qb.getMany();
   }
 
   async findOne(id: string): Promise<ObjectGroup> {
@@ -35,10 +58,11 @@ export class ObjectGroupsService {
     return group;
   }
 
-  async create(dto: CreateObjectGroupDto): Promise<ObjectGroup> {
+  async create(dto: CreateObjectGroupDto, userId: string): Promise<ObjectGroup> {
     const group = this.groupRepository.create({
       name: dto.name,
       description: dto.description || null,
+      createdById: userId,
     });
 
     if (dto.objectIds && dto.objectIds.length > 0) {
@@ -47,7 +71,15 @@ export class ObjectGroupsService {
       });
     }
 
-    return this.groupRepository.save(group);
+    const saved = await this.groupRepository.save(group);
+
+    await this.resourceAccessService.createCreatorAccess(
+      ResourceType.ObjectGroup,
+      saved.id,
+      userId,
+    );
+
+    return saved;
   }
 
   async update(id: string, dto: UpdateObjectGroupDto): Promise<ObjectGroup> {

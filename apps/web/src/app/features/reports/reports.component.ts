@@ -2,6 +2,7 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
+import { PermissionService } from '../../core/services/permission.service';
 
 @Component({
   selector: 'app-reports',
@@ -16,7 +17,7 @@ import { ApiService } from '../../core/services/api.service';
           <h1 class="text-2xl font-brand font-bold text-white">Reports</h1>
           <p class="text-xs text-zinc-500 mt-1">Generate and manage compliance reports</p>
         </div>
-        <button (click)="showGenerateModal = true"
+        <button *ngIf="perm.canGlobal('report', 'create')" (click)="showGenerateModal = true"
           class="px-4 py-2 bg-white text-black rounded-lg text-sm font-brand font-semibold hover:bg-zinc-200 transition-colors flex items-center gap-2">
           <iconify-icon icon="solar:document-add-linear" width="16"></iconify-icon>
           Generate Report
@@ -35,7 +36,7 @@ import { ApiService } from '../../core/services/api.service';
               <p class="text-[10px] text-zinc-500">Security posture summary</p>
             </div>
           </div>
-          <button (click)="quickGenerate('compliance')"
+          <button *ngIf="perm.canGlobal('report', 'create')" (click)="quickGenerate('compliance')"
             class="w-full px-3 py-1.5 rounded-lg border border-emerald-500/20 text-[10px] text-emerald-500 font-brand hover:bg-emerald-500/10 transition-colors">
             Quick Generate
           </button>
@@ -50,7 +51,7 @@ import { ApiService } from '../../core/services/api.service';
               <p class="text-[10px] text-zinc-500">Full audit trail export</p>
             </div>
           </div>
-          <button (click)="quickGenerate('audit')"
+          <button *ngIf="perm.canGlobal('report', 'create')" (click)="quickGenerate('audit')"
             class="w-full px-3 py-1.5 rounded-lg border border-blue-500/20 text-[10px] text-blue-500 font-brand hover:bg-blue-500/10 transition-colors">
             Quick Generate
           </button>
@@ -65,7 +66,7 @@ import { ApiService } from '../../core/services/api.service';
               <p class="text-[10px] text-zinc-500">High-level overview</p>
             </div>
           </div>
-          <button (click)="quickGenerate('executive')"
+          <button *ngIf="perm.canGlobal('report', 'create')" (click)="quickGenerate('executive')"
             class="w-full px-3 py-1.5 rounded-lg border border-purple-500/20 text-[10px] text-purple-500 font-brand hover:bg-purple-500/10 transition-colors">
             Quick Generate
           </button>
@@ -80,7 +81,7 @@ import { ApiService } from '../../core/services/api.service';
               <p class="text-[10px] text-zinc-500">Framework compliance</p>
             </div>
           </div>
-          <button (click)="showReferentielReportModal = true"
+          <button *ngIf="perm.canGlobal('report', 'create')" (click)="showReferentielReportModal = true"
             class="w-full px-3 py-1.5 rounded-lg border border-amber-500/20 text-[10px] text-amber-500 font-brand hover:bg-amber-500/10 transition-colors">
             Generate
           </button>
@@ -121,7 +122,7 @@ import { ApiService } from '../../core/services/api.service';
                 <div class="flex gap-2">
                   <button *ngIf="report.id" (click)="viewReport(report.id)"
                     class="px-2 py-1 rounded text-[10px] text-zinc-400 font-brand hover:bg-white/5 transition-colors">View</button>
-                  <button *ngIf="report.id" (click)="downloadReport(report)"
+                  <button *ngIf="report.id && perm.canGlobal('report', 'export')" (click)="downloadReport(report)"
                     class="px-2 py-1 rounded text-[10px] text-zinc-400 font-brand hover:bg-white/5 transition-colors">Download</button>
                 </div>
               </td>
@@ -263,7 +264,7 @@ export class ReportsComponent implements OnInit {
   referentielReportTitle = '';
   selectedReferentielId = '';
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, public perm: PermissionService) {}
 
   ngOnInit(): void {
     this.loadReports();

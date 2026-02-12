@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
+import { PermissionService } from '../../core/services/permission.service';
 import { ScoreGaugeComponent } from '../../shared/components/score-gauge/score-gauge.component';
 
 @Component({
@@ -33,7 +34,7 @@ import { ScoreGaugeComponent } from '../../shared/components/score-gauge/score-g
         </div>
         <div class="flex items-center gap-4">
           <app-score-gauge [score]="runningScore" size="sm"></app-score-gauge>
-          <button (click)="completeRun()" [disabled]="run.status === 'Completed'"
+          <button *ngIf="perm.canGlobal('checklist_run', 'update')" (click)="completeRun()" [disabled]="run.status === 'Completed'"
             class="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-brand font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
             <iconify-icon icon="solar:check-circle-linear" width="16"></iconify-icon>Complete Run
           </button>
@@ -70,7 +71,7 @@ import { ScoreGaugeComponent } from '../../shared/components/score-gauge/score-g
           </div>
 
           <!-- Yes/No answer type -->
-          <div *ngIf="item.type === 'yes_no' || item.type === 'YesNo' || !item.type" class="flex gap-2">
+          <div *ngIf="(item.type === 'yes_no' || item.type === 'YesNo' || !item.type) && perm.canGlobal('checklist_run', 'update')" class="flex gap-2">
             <button (click)="answerItem(item, 'yes')"
               class="px-4 py-2 rounded-lg text-sm font-brand transition-colors"
               [ngClass]="item.answer === 'yes' ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400' : 'border border-white/10 text-zinc-400 hover:bg-white/5'">
@@ -89,7 +90,7 @@ import { ScoreGaugeComponent } from '../../shared/components/score-gauge/score-g
           </div>
 
           <!-- Score answer type -->
-          <div *ngIf="item.type === 'score' || item.type === 'Score'" class="space-y-2">
+          <div *ngIf="(item.type === 'score' || item.type === 'Score') && perm.canGlobal('checklist_run', 'update')" class="space-y-2">
             <input type="range" [min]="0" [max]="100" [value]="item.scoreValue || 0"
               (input)="onScoreChange(item, $event)"
               class="w-full accent-emerald-500" />
@@ -101,7 +102,7 @@ import { ScoreGaugeComponent } from '../../shared/components/score-gauge/score-g
           </div>
 
           <!-- Evidence answer type -->
-          <div *ngIf="item.type === 'evidence' || item.type === 'Evidence'" class="space-y-2">
+          <div *ngIf="(item.type === 'evidence' || item.type === 'Evidence') && perm.canGlobal('checklist_run', 'update')" class="space-y-2">
             <label class="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-white/10 rounded-lg cursor-pointer hover:border-white/20 transition-colors">
               <iconify-icon icon="solar:upload-linear" width="18" class="text-zinc-500"></iconify-icon>
               <span class="text-xs text-zinc-400">{{ item.evidenceFile ? item.evidenceFile.name : 'Upload evidence file' }}</span>
@@ -126,7 +127,7 @@ import { ScoreGaugeComponent } from '../../shared/components/score-gauge/score-g
           </div>
 
           <!-- Notes -->
-          <div class="mt-3">
+          <div class="mt-3" *ngIf="perm.canGlobal('checklist_run', 'update')">
             <textarea [(ngModel)]="item.notes" (blur)="saveItemNotes(item)" rows="2" placeholder="Add notes..."
               class="w-full bg-zinc-900/50 border border-white/5 rounded-lg px-3 py-2 text-[11px] text-zinc-400 placeholder-zinc-700 focus:border-white/10 focus:outline-none transition-colors resize-none"></textarea>
           </div>
@@ -139,7 +140,7 @@ import { ScoreGaugeComponent } from '../../shared/components/score-gauge/score-g
           <app-score-gauge [score]="runningScore" size="sm"></app-score-gauge>
           <span class="text-xs text-zinc-400 font-mono">{{ answeredCount }} / {{ items.length }} answered</span>
         </div>
-        <button (click)="completeRun()" [disabled]="run.status === 'Completed'"
+        <button *ngIf="perm.canGlobal('checklist_run', 'update')" (click)="completeRun()" [disabled]="run.status === 'Completed'"
           class="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-brand font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
           <iconify-icon icon="solar:check-circle-linear" width="16"></iconify-icon>Complete Run
         </button>
@@ -181,7 +182,8 @@ export class ChecklistRunComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private api: ApiService
+    private api: ApiService,
+    public perm: PermissionService,
   ) {}
 
   ngOnInit(): void {
