@@ -4,7 +4,7 @@
 # Usage:
 #   1. Copy env.example to .env and update passwords
 #   2. docker compose up -d
-#   3. Access: http://localhost (Web), http://localhost:8080 (Keycloak)
+#   3. Access: http://localhost (Web), http://localhost/auth (Keycloak via same host)
 # =============================================================================
 
 services:
@@ -38,28 +38,22 @@ services:
     image: quay.io/keycloak/keycloak:26.0
     container_name: osci-keycloak
     restart: unless-stopped
-    command: start --import-realm
+    command:
+      - start
+      - --import-realm
+      - --http-enabled=true
+      - --proxy-headers=xforwarded
+      - --health-enabled=true
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/${KEYCLOAK_DB_NAME}
       KC_DB_USERNAME: ${DB_USER}
       KC_DB_PASSWORD: ${DB_PASSWORD}
-      KC_HOSTNAME_STRICT: "false"
-      KC_HTTP_ENABLED: "true"
-      KC_PROXY_HEADERS: xforwarded
-      KC_HEALTH_ENABLED: "true"
-      KC_HTTP_MANAGEMENT_HEALTH_ENABLED: "false"
+      KC_HOSTNAME: ${KEYCLOAK_URL}
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
     volumes:
-      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/osci-realm.json:ro
-    healthcheck:
-      # Port 8080 ouvert = Keycloak écoute (l'endpoint /health/ready peut être absent sur l'image standard)
-      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080' || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 18
-      start_period: 120s
+      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/osci-realm.json:ro      
     depends_on:
       postgres:
         condition: service_healthy
@@ -88,7 +82,7 @@ services:
       - ./docker/keycloak/init-realm-admin.sh:/scripts/init-realm-admin.sh:ro
     depends_on:
       keycloak:
-        condition: service_healthy
+        condition: service_started
     networks:
       - osci-network
 
@@ -179,7 +173,10 @@ services:
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
       API_URL: ${API_URL}
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
     networks:
       - osci-network
 
