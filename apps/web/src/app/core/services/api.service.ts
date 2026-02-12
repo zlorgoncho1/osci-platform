@@ -170,8 +170,8 @@ export class ApiService {
     if (objectId) formData.append('objectId', objectId);
     return this.http.post<any>(`${this.baseUrl}/evidence`, formData);
   }
-  getEvidenceList(params?: any): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/evidence`, { params });
+  getEvidenceList(params?: any): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/evidence`, { params });
   }
   downloadEvidence(id: string): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/evidence/${id}/download`, { responseType: 'blob' });

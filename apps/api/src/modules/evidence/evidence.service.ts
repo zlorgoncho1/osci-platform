@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, FindOptionsWhere, ILike } from 'typeorm';
 import * as Minio from 'minio';
 import { v4 as uuidv4 } from 'uuid';
 import { Evidence } from './entities/evidence.entity';
@@ -95,11 +95,33 @@ export class EvidenceService implements OnModuleInit {
     return this.evidenceRepository.save(evidence);
   }
 
-  async findAll(): Promise<Evidence[]> {
-    return this.evidenceRepository.find({
+  async findAll(filters?: {
+    objectId?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: Evidence[]; total: number; page: number; limit: number }> {
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 50;
+    const skip = (page - 1) * limit;
+
+    const where: FindOptionsWhere<Evidence> = {};
+    if (filters?.objectId) {
+      where.objectId = filters.objectId;
+    }
+    if (filters?.search?.trim()) {
+      where.filename = ILike(`%${filters.search.trim()}%`);
+    }
+
+    const [data, total] = await this.evidenceRepository.findAndCount({
+      where,
       order: { createdAt: 'DESC' },
       relations: ['object'],
+      skip,
+      take: limit,
     });
+
+    return { data, total, page, limit };
   }
 
   async findOne(id: string): Promise<Evidence> {

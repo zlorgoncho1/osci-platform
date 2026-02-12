@@ -71,15 +71,19 @@ services:
     restart: "no"
     entrypoint: ["/bin/sh", "-c"]
     command:
-      - "apk add --no-cache curl && sh /scripts/init-realm-admin.sh"
+      - "apk add --no-cache curl jq && sh /scripts/init-realm-admin.sh"
     environment:
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-osci}
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-osci-web}
       KEYCLOAK_REALM_ADMIN_USER: ${KEYCLOAK_REALM_ADMIN_USER}
       KEYCLOAK_REALM_ADMIN_EMAIL: ${KEYCLOAK_REALM_ADMIN_EMAIL:-}
       KEYCLOAK_REALM_ADMIN_PASSWORD: ${KEYCLOAK_REALM_ADMIN_PASSWORD}
+      WEB_APP_URL: ${WEB_APP_URL:-}
+      KEYCLOAK_WEB_REDIRECT_URIS: ${KEYCLOAK_WEB_REDIRECT_URIS:-}
+      KEYCLOAK_WEB_ORIGINS: ${KEYCLOAK_WEB_ORIGINS:-}
     volumes:
       - ./docker/keycloak/init-realm-admin.sh:/scripts/init-realm-admin.sh:ro
     depends_on:

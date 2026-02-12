@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Param,
+  Query,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -11,7 +12,7 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -54,8 +55,22 @@ export class EvidenceController {
   }
 
   @Get()
-  async findAll(): Promise<Evidence[]> {
-    return this.evidenceService.findAll();
+  @ApiQuery({ name: 'objectId', required: false })
+  @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async findAll(
+    @Query('objectId') objectId?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ): Promise<{ data: Evidence[]; total: number; page: number; limit: number }> {
+    return this.evidenceService.findAll({
+      objectId,
+      search,
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
   }
 
   @Get(':id')

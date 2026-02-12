@@ -5,6 +5,8 @@
 set -e
 KEYCLOAK_URL="${KEYCLOAK_URL:-http://keycloak:8080}"
 REALM="${KEYCLOAK_REALM:-osci}"
+KEYCLOAK_CLIENT_ID="${KEYCLOAK_CLIENT_ID:-osci-web}"
+WEB_APP_URL="${WEB_APP_URL:-}"
 
 echo "Waiting for Keycloak..."
 # /health/ready peut être absent sur l'image standard ; on attend que le realm master réponde
@@ -25,6 +27,73 @@ TOKEN=$(printf '%s' "$RESP" | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
 if [ -z "$TOKEN" ]; then
   echo "Failed to get admin token."
   exit 1
+fi
+
+csv_to_json_array() {
+  printf '%s' "$1" | jq -R -s -c 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0))'
+}
+
+csv_to_json_array_with_suffix() {
+  suffix="$1"
+  shift
+  printf '%s' "$1" | jq -R -s -c --arg s "$suffix" 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0) | . + $s)'
+}
+
+REDIRECT_URIS_JSON="null"
+WEB_ORIGINS_JSON="null"
+ROOT_URL=""
+
+if [ -n "${KEYCLOAK_WEB_REDIRECT_URIS}" ]; then
+  REDIRECT_URIS_JSON=$(csv_to_json_array "${KEYCLOAK_WEB_REDIRECT_URIS}")
+elif [ -n "${WEB_APP_URL}" ]; then
+  REDIRECT_URIS_JSON=$(csv_to_json_array_with_suffix "/*" "${WEB_APP_URL}")
+fi
+
+if [ -n "${KEYCLOAK_WEB_ORIGINS}" ]; then
+  WEB_ORIGINS_JSON=$(csv_to_json_array "${KEYCLOAK_WEB_ORIGINS}")
+elif [ -n "${WEB_APP_URL}" ]; then
+  WEB_ORIGINS_JSON=$(csv_to_json_array "${WEB_APP_URL}")
+fi
+
+if [ "${REDIRECT_URIS_JSON}" = "[]" ]; then
+  REDIRECT_URIS_JSON="null"
+fi
+if [ "${WEB_ORIGINS_JSON}" = "[]" ]; then
+  WEB_ORIGINS_JSON="null"
+fi
+
+if [ -n "${WEB_APP_URL}" ]; then
+  ROOT_URL=$(printf '%s' "${WEB_APP_URL}" | awk -F',' '{gsub(/^[ \t]+|[ \t]+$/, "", $1); print $1}')
+fi
+
+if [ "${REDIRECT_URIS_JSON}" != "null" ] || [ "${WEB_ORIGINS_JSON}" != "null" ] || [ -n "${ROOT_URL}" ]; then
+  CLIENT_UUID=$(curl -s -X GET "${KEYCLOAK_URL}/admin/realms/${REALM}/clients?clientId=${KEYCLOAK_CLIENT_ID}" \
+    -H "Authorization: Bearer ${TOKEN}" | jq -r ".[0].id // empty")
+  if [ -z "$CLIENT_UUID" ]; then
+    echo "Warning: Keycloak client not found: ${KEYCLOAK_CLIENT_ID}. Skipping redirect/origin update."
+  else
+    CLIENT_JSON=$(curl -s -X GET "${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${CLIENT_UUID}" \
+      -H "Authorization: Bearer ${TOKEN}")
+    UPDATED_JSON=$(printf "%s" "$CLIENT_JSON" | jq \
+      --argjson redirectUris "${REDIRECT_URIS_JSON}" \
+      --argjson webOrigins "${WEB_ORIGINS_JSON}" \
+      --arg rootUrl "${ROOT_URL}" \
+      '.
+      | (if $redirectUris != null and ($redirectUris | length) > 0 then .redirectUris = $redirectUris else . end)
+      | (if $webOrigins != null and ($webOrigins | length) > 0 then .webOrigins = $webOrigins else . end)
+      | (if ($rootUrl | length) > 0 then .rootUrl = $rootUrl | .baseUrl = $rootUrl | .adminUrl = $rootUrl else . end)
+      | (if $redirectUris != null and ($redirectUris | length) > 0 then .attributes["post.logout.redirect.uris"] = ($redirectUris | join("##")) else . end)
+      ' )
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${CLIENT_UUID}" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      -H "Content-Type: application/json" \
+      -d "${UPDATED_JSON}")
+    if [ "$HTTP_CODE" = "204" ] || [ "$HTTP_CODE" = "200" ]; then
+      echo "Keycloak client updated: ${KEYCLOAK_CLIENT_ID}"
+    else
+      echo "Warning: could not update Keycloak client (HTTP $HTTP_CODE)."
+    fi
+  fi
 fi
 
 # Email : pris depuis KEYCLOAK_REALM_ADMIN_EMAIL si défini, sinon déduit du username

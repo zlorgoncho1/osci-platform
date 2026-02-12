@@ -9,6 +9,32 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { AuditService } from '../../modules/audit/audit.service';
 
+/**
+ * Maps HTTP method + route path to a semantic action label.
+ * These labels match the filter dropdown in the frontend audit UI.
+ */
+function deriveSemanticAction(method: string, path: string): string {
+  const upper = method.toUpperCase();
+  const normalized = path.replace(/\/:[^/]+/g, '/*').toLowerCase();
+
+  if (normalized.match(/^\/auth/) && upper === 'POST') return 'LOGIN';
+  if (normalized.includes('logout')) return 'LOGOUT';
+  if (normalized.match(/^\/evidence/) && upper === 'POST') return 'UPLOAD_EVIDENCE';
+  if (normalized.match(/^\/checklists\/.*\/run/) && upper === 'POST') return 'RUN_CHECKLIST';
+
+  switch (upper) {
+    case 'POST':
+      return 'CREATE';
+    case 'PUT':
+    case 'PATCH':
+      return 'UPDATE';
+    case 'DELETE':
+      return 'DELETE';
+    default:
+      return `${upper} ${path}`;
+  }
+}
+
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
   private readonly logger = new Logger(AuditInterceptor.name);
@@ -40,7 +66,7 @@ export class AuditInterceptor implements NestInterceptor {
     params: Record<string, string>,
     request: { ip?: string; body?: unknown },
   ): Promise<void> {
-    const action = `${method} ${path}`;
+    const action = deriveSemanticAction(method, path);
     const actorId = user?.sub || 'anonymous';
     const objectId = params?.id || null;
 
@@ -54,8 +80,10 @@ export class AuditInterceptor implements NestInterceptor {
     if (request.body && typeof request.body === 'object') {
       const bodyKeys = Object.keys(request.body as Record<string, unknown>);
       if (bodyKeys.length > 0) {
-        contextData = { bodyKeys };
+        contextData = { bodyKeys, rawAction: `${method} ${path}` };
       }
+    } else {
+      contextData = { rawAction: `${method} ${path}` };
     }
 
     await this.auditService.log({

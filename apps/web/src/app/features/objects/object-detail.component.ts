@@ -309,7 +309,7 @@ export class ObjectDetailComponent implements OnInit {
     });
 
     this.api.getEvidenceList({ objectId: this.objectId }).subscribe({
-      next: (data) => { this.evidenceList = data || []; },
+      next: (data) => { this.evidenceList = data?.data || data || []; },
       error: () => {},
     });
 
@@ -359,7 +359,7 @@ export class ObjectDetailComponent implements OnInit {
     this.api.uploadEvidence(file, this.objectId).subscribe({
       next: () => {
         this.api.getEvidenceList({ objectId: this.objectId }).subscribe({
-          next: (data) => { this.evidenceList = data || []; },
+          next: (data) => { this.evidenceList = data?.data || data || []; },
         });
       },
       error: (err) => console.error('[OSCI] Failed to upload:', err),

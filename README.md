@@ -137,6 +137,9 @@ Anyone can contribute new security frameworks or checklists by submitting a PR t
 | `KEYCLOAK_URL`                  | `http://localhost:8080`    | Keycloak external URL                    |
 | `KEYCLOAK_REALM`                | `osci`                     | Keycloak realm name                      |
 | `KEYCLOAK_CLIENT_ID`            | `osci-web`                 | Keycloak client ID for frontend          |
+| `WEB_APP_URL`                   | `http://localhost`         | Public web app URL(s), comma-separated (used to set Keycloak redirect URIs and web origins) |
+| `KEYCLOAK_WEB_REDIRECT_URIS`    | (optional)                 | Override Keycloak redirect URIs (comma-separated) |
+| `KEYCLOAK_WEB_ORIGINS`          | (optional)                 | Override Keycloak web origins (comma-separated) |
 | `API_URL`                       | `/api`                     | API URL for frontend                     |
 | `GITHUB_REFERENTIEL_REPO`       | (see `.env`)               | GitHub repo for community referentiels   |
 
@@ -202,7 +205,7 @@ Before deploying to production, ensure the following:
    - Place the platform behind a reverse proxy (e.g., Traefik, Caddy, or Nginx) with TLS termination.
    - Update `sslRequired` in Keycloak realm to `"external"` or `"all"`.
    - Update all URLs in `.env` to use `https://`.
-   - Update `redirectUris` and `webOrigins` in Keycloak client configuration.
+   - Update `redirectUris` and `webOrigins` in Keycloak client configuration (or set `WEB_APP_URL` / `KEYCLOAK_WEB_*` in `.env` for automatic updates on startup).
 
 3. **Update Content-Security-Policy** in `apps/web/nginx.conf` to reference your production domain instead of `localhost`.
 

@@ -68,9 +68,11 @@ export class AuditService {
         qb.andWhere('log.objectType = :objectType', { objectType: filters.objectType });
       }
       if (filters?.startDate && filters?.endDate) {
+        const end = new Date(filters.endDate);
+        end.setHours(23, 59, 59, 999);
         qb.andWhere('log.createdAt BETWEEN :startDate AND :endDate', {
           startDate: new Date(filters.startDate),
-          endDate: new Date(filters.endDate),
+          endDate: end,
         });
       }
       const searchPattern = `%${filters!.search!.trim()}%`;
@@ -100,9 +102,11 @@ export class AuditService {
       where.objectType = filters.objectType;
     }
     if (filters?.startDate && filters?.endDate) {
+      const end = new Date(filters.endDate);
+      end.setHours(23, 59, 59, 999);
       where.createdAt = Between(
         new Date(filters.startDate),
-        new Date(filters.endDate),
+        end,
       );
     }
 
