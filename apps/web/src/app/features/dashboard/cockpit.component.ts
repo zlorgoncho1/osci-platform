@@ -27,7 +27,13 @@ interface TaskCounts {
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-brand font-bold text-white">Security Cockpit</h1>
-          <p class="text-xs text-zinc-400 mt-1">Real-time security posture overview</p>
+          <p class="text-xs text-zinc-400 mt-1">Real-time security posture overview
+            <a routerLink="/app/docs/module-cockpit"
+               class="inline-flex items-center gap-1 ml-3 text-zinc-600 hover:text-emerald-400 transition-colors">
+              <iconify-icon icon="solar:book-2-linear" width="12"></iconify-icon>
+              <span class="text-[10px]">Guide</span>
+            </a>
+          </p>
         </div>
         <span class="text-[10px] font-mono text-zinc-500">{{ now | date:'yyyy-MM-dd HH:mm:ss' }}</span>
       </div>
@@ -185,6 +191,15 @@ interface TaskCounts {
               </div>
             </div>
           </div>
+
+          <!-- Documentation -->
+          <a routerLink="/app/docs" class="glass-panel p-4 flex items-center gap-3 hover:border-emerald-500/30 transition-colors group">
+            <iconify-icon icon="solar:book-2-linear" width="20" class="text-emerald-400"></iconify-icon>
+            <div>
+              <p class="text-xs font-brand text-white group-hover:text-emerald-400 transition-colors">Documentation</p>
+              <p class="text-[10px] text-zinc-500">Guides et références de la plateforme</p>
+            </div>
+          </a>
         </div>
       </div>
     </div>

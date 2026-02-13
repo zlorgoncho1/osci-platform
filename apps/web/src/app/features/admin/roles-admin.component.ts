@@ -1,5 +1,6 @@
 import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { PermissionService } from '../../core/services/permission.service';
@@ -16,14 +17,20 @@ const ACTIONS = ['read', 'create', 'update', 'delete', 'export', 'manage'];
 @Component({
   selector: 'app-roles-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div class="p-6 space-y-6">
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-xl font-bold text-white">Role Management</h1>
-          <p class="text-sm text-zinc-400 mt-1">Configure roles and their permissions</p>
+          <p class="text-sm text-zinc-400 mt-1">Configure roles and their permissions
+            <a routerLink="/app/docs/module-admin"
+               class="inline-flex items-center gap-1 ml-3 text-zinc-600 hover:text-emerald-400 transition-colors">
+              <iconify-icon icon="solar:book-2-linear" width="12"></iconify-icon>
+              <span class="text-[10px]">Guide</span>
+            </a>
+          </p>
         </div>
         <button *ngIf="perm.canGlobal('user', 'manage')" (click)="openCreateModal()"
           class="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-colors flex items-center gap-2">

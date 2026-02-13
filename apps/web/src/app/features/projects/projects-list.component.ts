@@ -18,7 +18,13 @@ import { PermissionService } from '../../core/services/permission.service';
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-brand font-bold text-white">Security Projects</h1>
-          <p class="text-xs text-zinc-500 mt-1">Manage and track security workstreams</p>
+          <p class="text-xs text-zinc-500 mt-1">Manage and track security workstreams
+            <a routerLink="/app/docs/module-projects"
+               class="inline-flex items-center gap-1 ml-3 text-zinc-600 hover:text-emerald-400 transition-colors">
+              <iconify-icon icon="solar:book-2-linear" width="12"></iconify-icon>
+              <span class="text-[10px]">Guide</span>
+            </a>
+          </p>
         </div>
         <button *ngIf="perm.canGlobal('project', 'create')" (click)="showForm = !showForm"
           class="px-4 py-2 rounded-lg bg-white text-black text-sm font-semibold font-brand hover:bg-zinc-200 transition-colors flex items-center gap-2">

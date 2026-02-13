@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OSCI Platform — Plateforme de pilotage de la sécurité Zero Trust</title>
+  <meta name="description" content="Plateforme de pilotage de la sécurité Zero Trust. Centralisez vos contrôles, mesurez votre posture et pilotez la remédiation." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      corePlugins: { preflight: false },
+      theme: {
+        extend: {
+          colors: {
+            surface: '#0A0A0A',
+            surfaceHighlight: '#111111',
+          },
+          fontFamily: {
+            sans: ['"Stack Sans Notch"', '"Space Grotesk"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          backgroundImage: {
+            'subtle-grid': "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(255 255 255 / 0.04)'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e\")",
+          },
+        },
+      },
+    }
+  </script>
+
+  <!-- Iconify -->
+  <script src="https://cdn.jsdelivr.net/npm/iconify-icon@1.0.8/dist/iconify-icon.min.js"></script>
+
+  <!-- Site styles -->
+  <link rel="stylesheet" href="./src/styles.css" />
+
+  <style>
+    .font-brand { font-family: 'Stack Sans Notch', 'Space Grotesk', sans-serif; letter-spacing: -0.03em; }
+    .glass-card { background: rgba(12,12,14,0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); border-radius: 0.75rem; }
+
+    /* Fixed left sidebar */
+    .side-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 200px;
+      z-index: 60;
+      background: rgba(10,10,10,0.97);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-right: 1px solid rgba(255,255,255,0.06);
+      padding: 20px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .side-nav-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      color: #71717a;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .side-nav-link:hover, .side-nav-link.active {
+      color: #e4e4e7;
+      background: rgba(255,255,255,0.04);
+    }
+    .side-nav-link.active {
+      color: #34d399;
+      background: rgba(52,211,153,0.06);
+    }
+    .side-nav-divider {
+      height: 1px;
+      background: rgba(255,255,255,0.06);
+      margin: 6px 0;
+    }
+
+    /* Offset content when sidebar visible */
+    html, body { overflow-x: hidden; }
+    @media (min-width: 1024px) {
+      #landing { margin-left: 200px; }
+    }
+    @media (max-width: 1023px) {
+      .side-nav { display: none; }
+      .side-nav.open {
+        display: flex;
+        width: 220px;
+        top: 56px;
+        padding-top: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- DOCS HEADER (visible only on #docs views)              -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <header id="site-header" class="hidden">
+    <div class="header-inner">
+      <a href="./" class="header-brand">
+        <img src="./logo-white.png" alt="OSCI" class="header-logo-img" />
+        <span class="header-title">OSCI Platform</span>
+      </a>
+      <nav class="header-nav">
+        <a href="./#docs" class="header-link">Documentation</a>
+        <a href="https://github.com/zlorgoncho1/osci-platform" target="_blank" rel="noopener" class="header-link">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="app">
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- LANDING PAGE (default view)                            -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- ── Fixed Left Sidebar (desktop) ── -->
+    <nav id="side-nav" class="side-nav">
+      <a href="./" class="flex items-center gap-2.5 px-2 mb-3">
+        <img src="./logo-white.png" alt="OSCI" class="h-5">
+        <span class="text-zinc-100 font-bold text-xs font-brand">OSCI Platform</span>
+      </a>
+
+      <div class="side-nav-divider"></div>
+
+      <a onclick="scrollToSection('hero')" class="side-nav-link" data-section="hero">
+        <iconify-icon icon="solar:home-2-linear" width="14"></iconify-icon> Accueil
+      </a>
+      <a onclick="scrollToSection('problem')" class="side-nav-link" data-section="problem">
+        <iconify-icon icon="solar:danger-triangle-linear" width="14"></iconify-icon> Problème
+      </a>
+      <a onclick="scrollToSection('modules')" class="side-nav-link" data-section="modules">
+        <iconify-icon icon="solar:widget-5-linear" width="14"></iconify-icon> Modules
+      </a>
+      <a onclick="scrollToSection('architecture')" class="side-nav-link" data-section="architecture">
+        <iconify-icon icon="solar:server-minimalistic-linear" width="14"></iconify-icon> Architecture
+      </a>
+      <a onclick="scrollToSection('security')" class="side-nav-link" data-section="security">
+        <iconify-icon icon="solar:shield-keyhole-linear" width="14"></iconify-icon> Sécurité
+      </a>
+      <a onclick="scrollToSection('deploy')" class="side-nav-link" data-section="deploy">
+        <iconify-icon icon="solar:box-linear" width="14"></iconify-icon> Déploiement
+      </a>
+
+      <div class="side-nav-divider"></div>
+
+      <a href="https://github.com/zlorgoncho1/osci-platform" target="_blank" rel="noopener" class="side-nav-link">
+        <iconify-icon icon="simple-icons:github" width="14"></iconify-icon> GitHub
+      </a>
+      <a href="./#docs" class="side-nav-link" style="color:#34d399;">
+        <iconify-icon icon="solar:document-text-linear" width="14"></iconify-icon> Documentation
+      </a>
+    </nav>
+
+    <!-- ── Mobile top bar (< 1024px) ── -->
+    <nav id="mobile-bar" class="lg:hidden fixed top-0 w-full z-50 h-14 flex items-center justify-between px-5" style="background:rgba(10,10,10,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.06);">
+      <div class="flex items-center gap-2.5">
+        <img src="./logo-white.png" alt="OSCI" class="h-5">
+        <span class="text-zinc-100 font-bold text-xs font-brand">OSCI Platform</span>
+      </div>
+      <button onclick="document.getElementById('side-nav').classList.toggle('open'); this.querySelector('.menu-open').classList.toggle('hidden'); this.querySelector('.menu-close').classList.toggle('hidden');"
+              class="w-8 h-8 flex items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-zinc-400 hover:text-white hover:bg-white/[0.08] transition-all">
+        <iconify-icon icon="solar:hamburger-menu-linear" width="16" class="menu-open"></iconify-icon>
+        <iconify-icon icon="solar:close-circle-linear" width="16" class="menu-close hidden"></iconify-icon>
+      </button>
+    </nav>
+
+    <div id="landing" class="relative">
+
+      <!-- Ambient Background -->
+      <div class="absolute inset-0 bg-subtle-grid pointer-events-none z-0"></div>
+      <div class="landing-ambient"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- 1. HERO — Résumé exécutif             -->
+      <!-- ══════════════════════════════════════ -->
+      <header id="hero" class="relative pt-24 pb-20 lg:pt-24 lg:pb-32 px-6 z-10">
+        <div class="max-w-4xl mx-auto text-center">
+          <h1 class="text-5xl lg:text-7xl font-bold text-white mb-6 leading-[1.1] font-brand">
+            La sécurité Zero Trust <br>
+            pilotée par la preuve.
+          </h1>
+
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 text-[10px] uppercase tracking-wider font-medium mb-6">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            OSCI Platform
+          </div>
+
+          <p class="text-lg text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+            Centralisez vos contrôles, mesurez votre <strong class="text-zinc-200 font-medium">Integrity Score</strong> et orchestrez la remédiation. Fini le chaos des fichiers Excel. Une source de vérité unique pour les RSSI, auditeurs et développeurs.
+          </p>
+
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a href="./#docs" class="h-10 px-6 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-colors flex items-center gap-2 no-underline font-brand">
+              <iconify-icon icon="solar:rocket-2-linear" class="text-base"></iconify-icon>
+              Démarrer l'Audit
+            </a>
+            <a onclick="scrollToSection('problem')" class="cursor-pointer h-10 px-6 rounded-lg border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 hover:text-white font-semibold text-xs transition-colors flex items-center gap-2 no-underline font-brand">
+              <iconify-icon icon="solar:arrow-down-linear" class="text-base"></iconify-icon>
+              Explorer la plateforme
+            </a>
+          </div>
+        </div>
+
+        <!-- Dashboard Abstract Visual -->
+        <div class="mt-20 relative max-w-5xl mx-auto rounded-xl border border-white/[0.08] bg-[#0C0C0E] shadow-2xl overflow-hidden group">
+          <div class="absolute inset-0 bg-gradient-to-t from-emerald-500/5 via-transparent to-transparent opacity-50"></div>
+          <div class="h-9 border-b border-white/[0.06] bg-surface/50 flex items-center px-4 gap-4 justify-between">
+            <div class="flex items-center gap-3">
+              <div class="flex gap-1.5"><div class="w-2 h-2 rounded-full bg-zinc-700"></div><div class="w-2 h-2 rounded-full bg-zinc-700"></div></div>
+              <div class="text-[10px] text-zinc-500 font-mono">osci-platform / cockpit</div>
+            </div>
+            <div class="flex gap-2 text-[10px] text-zinc-600"><span>Admin</span> <span class="text-emerald-500">Connected</span></div>
+          </div>
+          <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="rounded-lg bg-surfaceHighlight p-5 border border-white/[0.06] relative overflow-hidden">
+              <div class="absolute top-0 right-0 p-4 opacity-20"><iconify-icon icon="solar:shield-star-linear" class="text-4xl text-emerald-500"></iconify-icon></div>
+              <div class="text-[10px] text-zinc-500 mb-2 uppercase tracking-wider font-medium">Security Integrity Score</div>
+              <div class="text-4xl font-bold text-white tracking-tight flex items-baseline gap-2">84<span class="text-lg text-zinc-500">/100</span></div>
+              <div class="mt-4 w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden"><div class="bg-emerald-500 h-full w-[84%]"></div></div>
+              <div class="mt-2 text-[10px] text-emerald-400 flex items-center gap-1"><iconify-icon icon="solar:graph-up-linear"></iconify-icon> +2.4% vs last run</div>
+            </div>
+            <div class="rounded-lg bg-surfaceHighlight p-5 border border-white/[0.06]">
+              <div class="text-[10px] text-zinc-500 mb-2 uppercase tracking-wider font-medium">Contrôles Actifs</div>
+              <div class="text-3xl font-bold text-white tracking-tight">1,240</div>
+              <div class="mt-4 space-y-2">
+                <div class="flex justify-between text-[10px] text-zinc-400"><span>ISO 27001</span> <span class="text-zinc-200">450</span></div>
+                <div class="flex justify-between text-[10px] text-zinc-400"><span>OWASP Top 10</span> <span class="text-zinc-200">320</span></div>
+                <div class="flex justify-between text-[10px] text-zinc-400"><span>GDPR</span> <span class="text-zinc-200">110</span></div>
+              </div>
+            </div>
+            <div class="rounded-lg bg-surfaceHighlight p-5 border border-white/[0.06]">
+              <div class="text-[10px] text-zinc-500 mb-2 uppercase tracking-wider font-medium">Remédiation (Kanban)</div>
+              <div class="text-3xl font-bold text-white tracking-tight flex items-center gap-2">12 <span class="text-xs font-normal px-2 py-0.5 rounded bg-rose-500/10 text-rose-500 border border-rose-500/20">3 Critical</span></div>
+              <div class="mt-4 flex -space-x-2">
+                <div class="w-6 h-6 rounded-full bg-zinc-800 border border-black flex items-center justify-center text-[10px]">JM</div>
+                <div class="w-6 h-6 rounded-full bg-emerald-900 border border-black flex items-center justify-center text-[10px] text-emerald-400">AL</div>
+                <div class="w-6 h-6 rounded-full bg-zinc-800 border border-black flex items-center justify-center text-[10px]">+4</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- 2. LE PROBLÈME ADRESSÉ                -->
+      <!-- ══════════════════════════════════════ -->
+      <section id="problem" class="py-24 px-6 border-t border-white/[0.08]">
+        <div class="max-w-6xl mx-auto">
+          <div class="mb-12">
+            <p class="text-[10px] uppercase tracking-wider text-emerald-400 font-medium mb-3">Le problème</p>
+            <h2 class="text-2xl font-bold text-white mb-4 font-brand">Pourquoi les organisations échouent</h2>
+            <p class="text-sm text-zinc-400 max-w-3xl">Les contrôles de sécurité sont dispersés entre des tableurs, des outils hétérogènes et des processus manuels. Cette fragmentation engendre :</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="glass-card p-5">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:eye-closed-linear" class="text-rose-400"></iconify-icon><span class="text-xs font-bold text-white font-brand">Manque de visibilité</span></div>
+              <p class="text-xs text-zinc-500">Impossible d'avoir une vue d'ensemble fiable de la posture de sécurité globale.</p>
+            </div>
+            <div class="glass-card p-5">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:document-text-broken" class="text-amber-400"></iconify-icon><span class="text-xs font-bold text-white font-brand">Audits difficiles</span></div>
+              <p class="text-xs text-zinc-500">Preuves dispersées, pas de centralisation des résultats de contrôle.</p>
+            </div>
+            <div class="glass-card p-5">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:bug-linear" class="text-rose-400"></iconify-icon><span class="text-xs font-bold text-white font-brand">Remédiation non suivie</span></div>
+              <p class="text-xs text-zinc-500">Les vulnérabilités identifiées persistent faute de suivi structuré.</p>
+            </div>
+            <div class="glass-card p-5">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:chart-broken" class="text-amber-400"></iconify-icon><span class="text-xs font-bold text-white font-brand">Décideurs sans indicateurs</span></div>
+              <p class="text-xs text-zinc-500">Pas de métriques objectives pour arbitrer les investissements sécurité.</p>
+            </div>
+            <div class="glass-card p-5">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:shuffle-linear" class="text-amber-400"></iconify-icon><span class="text-xs font-bold text-white font-brand">Hétérogénéité des pratiques</span></div>
+              <p class="text-xs text-zinc-500">Chaque équipe applique ses propres contrôles sans standardisation.</p>
+            </div>
+            <div class="glass-card p-5">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:history-linear" class="text-rose-400"></iconify-icon><span class="text-xs font-bold text-white font-brand">Perte de traçabilité</span></div>
+              <p class="text-xs text-zinc-500">Aucun historique fiable des actions et décisions de sécurité.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- 3. LA SOLUTION — 5 PILIERS            -->
+      <!-- ══════════════════════════════════════ -->
+      <section id="pillars" class="py-24 px-6 border-t border-white/[0.08] bg-surface/30">
+        <div class="max-w-6xl mx-auto">
+          <div class="mb-12">
+            <p class="text-[10px] uppercase tracking-wider text-emerald-400 font-medium mb-3">La solution</p>
+            <h2 class="text-2xl font-bold text-white mb-4 font-brand">Cinq piliers pour la conformité</h2>
+          </div>
+          <div class="grid md:grid-cols-5 gap-6">
+            <div class="group">
+              <div class="w-10 h-10 rounded-lg bg-zinc-900 border border-white/[0.08] flex items-center justify-center text-emerald-400 group-hover:border-emerald-500/30 transition-all mb-4">
+                <iconify-icon icon="solar:layers-minimalistic-linear" class="text-xl"></iconify-icon>
+              </div>
+              <h3 class="text-sm font-bold text-white mb-2 font-brand">Centraliser</h3>
+              <p class="text-xs text-zinc-500 leading-relaxed">Regroupez tous vos contrôles dans des checklists structurées, organisées par référentiels (ISO 27001, NIST, OWASP, CIS).</p>
+            </div>
+            <div class="group">
+              <div class="w-10 h-10 rounded-lg bg-zinc-900 border border-white/[0.08] flex items-center justify-center text-blue-400 group-hover:border-blue-500/30 transition-all mb-4">
+                <iconify-icon icon="solar:ruler-angular-linear" class="text-xl"></iconify-icon>
+              </div>
+              <h3 class="text-sm font-bold text-white mb-2 font-brand">Standardiser</h3>
+              <p class="text-xs text-zinc-500 leading-relaxed">Appliquez des contrôles homogènes à vos objets grâce à des référentiels partagés par la communauté ou créés en interne.</p>
+            </div>
+            <div class="group">
+              <div class="w-10 h-10 rounded-lg bg-zinc-900 border border-white/[0.08] flex items-center justify-center text-purple-400 group-hover:border-purple-500/30 transition-all mb-4">
+                <iconify-icon icon="solar:pie-chart-2-linear" class="text-xl"></iconify-icon>
+              </div>
+              <h3 class="text-sm font-bold text-white mb-2 font-brand">Mesurer</h3>
+              <p class="text-xs text-zinc-500 leading-relaxed">Le Security Integrity Score fournit un indicateur objectif et comparable. Suivez son évolution dans le temps.</p>
+            </div>
+            <div class="group">
+              <div class="w-10 h-10 rounded-lg bg-zinc-900 border border-white/[0.08] flex items-center justify-center text-amber-400 group-hover:border-amber-500/30 transition-all mb-4">
+                <iconify-icon icon="solar:compass-big-linear" class="text-xl"></iconify-icon>
+              </div>
+              <h3 class="text-sm font-bold text-white mb-2 font-brand">Piloter</h3>
+              <p class="text-xs text-zinc-500 leading-relaxed">Chaque écart génère une tâche de remédiation. Le Kanban intégré permet de prioriser les corrections.</p>
+            </div>
+            <div class="group">
+              <div class="w-10 h-10 rounded-lg bg-zinc-900 border border-white/[0.08] flex items-center justify-center text-rose-400 group-hover:border-rose-500/30 transition-all mb-4">
+                <iconify-icon icon="solar:clipboard-check-linear" class="text-xl"></iconify-icon>
+              </div>
+              <h3 class="text-sm font-bold text-white mb-2 font-brand">Prouver</h3>
+              <p class="text-xs text-zinc-500 leading-relaxed">Attachez des preuves à chaque contrôle. Le journal d'audit trace automatiquement toutes les actions.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- 4. PROPOSITION DE VALEUR              -->
+      <!-- ══════════════════════════════════════ -->
+      <section id="value" class="py-24 px-6 border-t border-white/[0.08]">
+        <div class="max-w-6xl mx-auto">
+          <div class="mb-12">
+            <p class="text-[10px] uppercase tracking-wider text-emerald-400 font-medium mb-3">Proposition de valeur</p>
+            <h2 class="text-2xl font-bold text-white mb-4 font-brand">Pour chaque partie prenante</h2>
+          </div>
+          <div class="grid md:grid-cols-3 gap-6">
+            <div class="glass-card p-6">
+              <div class="flex items-center gap-2 mb-4"><iconify-icon icon="solar:buildings-linear" class="text-emerald-400 text-lg"></iconify-icon><h3 class="text-sm font-bold text-white font-brand">Pour les organisations</h3></div>
+              <div class="space-y-3">
+                <div class="flex items-start gap-2"><iconify-icon icon="solar:check-circle-linear" class="text-emerald-500 text-xs mt-0.5 shrink-0"></iconify-icon><p class="text-xs text-zinc-400">Source de vérité unique pour tous les contrôles, scores, preuves et audits</p></div>
+                <div class="flex items-start gap-2"><iconify-icon icon="solar:check-circle-linear" class="text-emerald-500 text-xs mt-0.5 shrink-0"></iconify-icon><p class="text-xs text-zinc-400">Conformité mesurable avec indicateurs quantifiés</p></div>
+                <div class="flex items-start gap-2"><iconify-icon icon="solar:check-circle-linear" class="text-emerald-500 text-xs mt-0.5 shrink-0"></iconify-icon><p class="text-xs text-zinc-400">Audit-ready : preuves centralisées et journal exhaustif</p></div>
+                <div class="flex items-start gap-2"><iconify-icon icon="solar:check-circle-linear" class="text-emerald-500 text-xs mt-0.5 shrink-0"></iconify-icon><p class="text-xs text-zinc-400">Gain de temps : automatisation de la remédiation</p></div>
+                <div class="flex items-start gap-2"><iconify-icon icon="solar:check-circle-linear" class="text-emerald-500 text-xs mt-0.5 shrink-0"></iconify-icon><p class="text-xs text-zinc-400">Standardisation via référentiels communautaires</p></div>
+              </div>
+            </div>
+            <div class="glass-card p-6">
+              <div class="flex items-center gap-2 mb-4"><iconify-icon icon="solar:shield-user-linear" class="text-blue-400 text-lg"></iconify-icon><h3 class="text-sm font-bold text-white font-brand">Pour les équipes sécurité</h3></div>
+              <div class="space-y-3">
+                <div class="flex items-start gap-2"><iconify-icon icon="solar:check-circle-linear" class="text-blue-500 text-xs mt-0.5 shrink-0"></iconify-icon><p class="text-xs text-zinc-400">Exécution des checklists guidée et traçable</p></div>
+                <div class="flex items-start gap-2"><iconify-icon icon="solar:check-circle-linear" class="text-blue-500 text-xs mt-0.5 shrink-0"></iconify-icon><p class="text-xs text-zinc-400">Preuves attachées directement aux contrôles</p></div>
+                <div class="flex items-start gap-2"><iconify-icon icon="solar:check-circle-linear" class="text-blue-500 text-xs mt-0.5 shrink-0"></iconify-icon><p class="text-xs text-zinc-400">Kanban de remédiation pour organiser le travail</p></div>
+                <div class="flex items-start gap-2"><iconify-icon icon="solar:check-circle-linear" class="text-blue-500 text-xs mt-0.5 shrink-0"></iconify-icon><p class="text-xs text-zinc-400">Scores objectifs pour prioriser les efforts</p></div>
+              </div>
+            </div>
+            <div class="glass-card p-6">
+              <div class="flex items-center gap-2 mb-4"><iconify-icon icon="solar:chart-square-linear" class="text-amber-400 text-lg"></iconify-icon><h3 class="text-sm font-bold text-white font-brand">Pour les décideurs</h3></div>
+              <div class="space-y-3">
+                <div class="flex items-start gap-2"><iconify-icon icon="solar:check-circle-linear" class="text-amber-500 text-xs mt-0.5 shrink-0"></iconify-icon><p class="text-xs text-zinc-400">Cockpit avec indicateurs synthétiques</p></div>
+                <div class="flex items-start gap-2"><iconify-icon icon="solar:check-circle-linear" class="text-amber-500 text-xs mt-0.5 shrink-0"></iconify-icon><p class="text-xs text-zinc-400">Security Integrity Score global et par périmètre</p></div>
+                <div class="flex items-start gap-2"><iconify-icon icon="solar:check-circle-linear" class="text-amber-500 text-xs mt-0.5 shrink-0"></iconify-icon><p class="text-xs text-zinc-400">Rapports de conformité exportables</p></div>
+                <div class="flex items-start gap-2"><iconify-icon icon="solar:check-circle-linear" class="text-amber-500 text-xs mt-0.5 shrink-0"></iconify-icon><p class="text-xs text-zinc-400">Visibilité sur l'avancement de la remédiation</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- 5. PUBLIC CIBLE & CAS D'USAGE         -->
+      <!-- ══════════════════════════════════════ -->
+      <section id="audience" class="py-24 px-6 border-t border-white/[0.08] bg-surface/30">
+        <div class="max-w-6xl mx-auto">
+          <div class="mb-12">
+            <p class="text-[10px] uppercase tracking-wider text-emerald-400 font-medium mb-3">Public cible</p>
+            <h2 class="text-2xl font-bold text-white mb-4 font-brand">Qui utilise OSCI ?</h2>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-16">
+            <div class="glass-card p-4 text-center"><iconify-icon icon="solar:shield-user-linear" class="text-emerald-400 text-xl mb-2"></iconify-icon><p class="text-xs font-bold text-white font-brand">RSSI</p><p class="text-[10px] text-zinc-500 mt-1">Pilotage global et arbitrage</p></div>
+            <div class="glass-card p-4 text-center"><iconify-icon icon="solar:lock-password-linear" class="text-blue-400 text-xl mb-2"></iconify-icon><p class="text-xs font-bold text-white font-brand">Équipe sécu</p><p class="text-[10px] text-zinc-500 mt-1">Checklists et remédiation</p></div>
+            <div class="glass-card p-4 text-center"><iconify-icon icon="solar:clipboard-check-linear" class="text-amber-400 text-xl mb-2"></iconify-icon><p class="text-xs font-bold text-white font-brand">Auditeur</p><p class="text-[10px] text-zinc-500 mt-1">Runs, preuves et logs</p></div>
+            <div class="glass-card p-4 text-center"><iconify-icon icon="solar:folder-check-linear" class="text-purple-400 text-xl mb-2"></iconify-icon><p class="text-xs font-bold text-white font-brand">Chef de projet</p><p class="text-[10px] text-zinc-500 mt-1">Conformité des projets</p></div>
+            <div class="glass-card p-4 text-center"><iconify-icon icon="solar:code-linear" class="text-cyan-400 text-xl mb-2"></iconify-icon><p class="text-xs font-bold text-white font-brand">Développeur</p><p class="text-[10px] text-zinc-500 mt-1">Contrôles sur dépôts</p></div>
+            <div class="glass-card p-4 text-center"><iconify-icon icon="solar:chart-square-linear" class="text-rose-400 text-xl mb-2"></iconify-icon><p class="text-xs font-bold text-white font-brand">Direction</p><p class="text-[10px] text-zinc-500 mt-1">Indicateurs et rapports</p></div>
+          </div>
+
+          <div class="mb-8">
+            <p class="text-[10px] uppercase tracking-wider text-zinc-400 font-medium mb-4">Cas d'usage</p>
+          </div>
+          <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="glass-card p-5 group hover:border-emerald-500/20 transition-colors">
+              <span class="text-[10px] text-emerald-400 font-mono">01</span>
+              <h4 class="text-xs font-bold text-white mt-1 font-brand">Campagne d'audit interne</h4>
+              <p class="text-[10px] text-zinc-500 mt-2">Créer un projet, associer les objets du périmètre, exécuter les checklists, générer un rapport.</p>
+            </div>
+            <div class="glass-card p-5 group hover:border-emerald-500/20 transition-colors">
+              <span class="text-[10px] text-emerald-400 font-mono">02</span>
+              <h4 class="text-xs font-bold text-white mt-1 font-brand">Certification ISO 27001</h4>
+              <p class="text-[10px] text-zinc-500 mt-2">Importer le référentiel communautaire, appliquer les checklists, suivre le score.</p>
+            </div>
+            <div class="glass-card p-5 group hover:border-emerald-500/20 transition-colors">
+              <span class="text-[10px] text-emerald-400 font-mono">03</span>
+              <h4 class="text-xs font-bold text-white mt-1 font-brand">Suivi de la remédiation</h4>
+              <p class="text-[10px] text-zinc-500 mt-2">Identifier les non-conformités, suivre les tâches correctives dans le Kanban, relancer les runs.</p>
+            </div>
+            <div class="glass-card p-5 group hover:border-emerald-500/20 transition-colors">
+              <span class="text-[10px] text-emerald-400 font-mono">04</span>
+              <h4 class="text-xs font-bold text-white mt-1 font-brand">Onboarding d'un projet</h4>
+              <p class="text-[10px] text-zinc-500 mt-2">Créer les objets (infra, code, pipeline), associer les checklists, évaluer le niveau initial.</p>
+            </div>
+            <div class="glass-card p-5 group hover:border-emerald-500/20 transition-colors">
+              <span class="text-[10px] text-emerald-400 font-mono">05</span>
+              <h4 class="text-xs font-bold text-white mt-1 font-brand">Reporting à la direction</h4>
+              <p class="text-[10px] text-zinc-500 mt-2">Exporter les scores et rapports de conformité pour les comités de sécurité.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- 6. LES 12 MODULES DÉTAILLÉS           -->
+      <!-- ══════════════════════════════════════ -->
+      <section id="modules" class="py-24 px-6 border-t border-white/[0.08] bg-black">
+        <div class="max-w-6xl mx-auto">
+          <div class="mb-16">
+            <p class="text-[10px] uppercase tracking-wider text-emerald-400 font-medium mb-3">Fonctionnalités</p>
+            <h2 class="text-2xl font-bold text-white mb-4 font-brand">12 modules intégrés</h2>
+            <p class="text-xs text-zinc-400 max-w-3xl">Une suite complète pour gérer le cycle de vie de votre conformité, de l'évaluation initiale à la preuve d'audit.</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Cockpit -->
+            <div class="glass-card p-6 hover:border-emerald-500/20 transition-colors">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:widget-5-linear" class="text-emerald-400"></iconify-icon><span class="text-[10px] uppercase tracking-wider font-medium text-emerald-400">Cockpit</span></div>
+              <h3 class="text-sm font-bold text-white font-brand mb-2">Tableau de bord</h3>
+              <p class="text-xs text-zinc-500 mb-3">Page d'accueil centralisant les indicateurs clés pour un pilotage rapide.</p>
+              <div class="space-y-1.5 text-[10px] text-zinc-400">
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-emerald-500"></iconify-icon>Indicateurs globaux et score moyen</div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-emerald-500"></iconify-icon>Évolution du Security Integrity Score</div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-emerald-500"></iconify-icon>Priorités et objets moins conformes</div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-emerald-500"></iconify-icon>Accès rapide aux projets en cours</div>
+              </div>
+            </div>
+            <!-- Objets -->
+            <div class="glass-card p-6 hover:border-blue-500/20 transition-colors">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:box-minimalistic-linear" class="text-blue-400"></iconify-icon><span class="text-[10px] uppercase tracking-wider font-medium text-blue-400">Objets</span></div>
+              <h3 class="text-sm font-bold text-white font-brand mb-2">14 types d'objets</h3>
+              <p class="text-xs text-zinc-500 mb-3">Project, Human, Infrastructure, Repository, Application, Device, Data, Network, Cloud, Third Party, Pipeline, Cluster, Server, Database.</p>
+              <div class="space-y-1.5 text-[10px] text-zinc-400">
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-blue-500"></iconify-icon>Liste, filtrage et détail par objet</div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-blue-500"></iconify-icon>Score, checklists, historique des runs</div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-blue-500"></iconify-icon>Groupes d'objets avec score consolidé</div>
+              </div>
+            </div>
+            <!-- Checklists -->
+            <div class="glass-card p-6 hover:border-amber-500/20 transition-colors">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:list-check-linear" class="text-amber-400"></iconify-icon><span class="text-[10px] uppercase tracking-wider font-medium text-amber-400">Checklists &amp; Runs</span></div>
+              <h3 class="text-sm font-bold text-white font-brand mb-2">Moteur de contrôles</h3>
+              <p class="text-xs text-zinc-500 mb-3">Exécutez des runs (Conforme / Non conforme / Non applicable), attachez des preuves et calculez le score.</p>
+              <div class="space-y-1.5 text-[10px] text-zinc-400">
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-amber-500"></iconify-icon>Types : YesNo, Score, Evidence, AutoCheck</div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-amber-500"></iconify-icon>Historique complet avec comparaison</div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-amber-500"></iconify-icon>Preuves attachées à chaque contrôle</div>
+              </div>
+            </div>
+            <!-- Score -->
+            <div class="glass-card p-6 hover:border-emerald-500/20 transition-colors">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:shield-star-linear" class="text-emerald-400"></iconify-icon><span class="text-[10px] uppercase tracking-wider font-medium text-emerald-400">Score</span></div>
+              <h3 class="text-sm font-bold text-white font-brand mb-2">Security Integrity Score</h3>
+              <p class="text-xs text-zinc-500 mb-3">Indicateur central : calculé automatiquement, pondéré, évolutif, multi-niveaux.</p>
+              <div class="flex items-center gap-3 mt-3">
+                <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Conforme</span>
+                <span class="px-2 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20">Attention</span>
+                <span class="px-2 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-400 border border-rose-500/20">Critique</span>
+              </div>
+            </div>
+            <!-- Remédiation -->
+            <div class="glass-card p-6 hover:border-rose-500/20 transition-colors">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:kanban-linear" class="text-rose-400"></iconify-icon><span class="text-[10px] uppercase tracking-wider font-medium text-rose-400">Remédiation</span></div>
+              <h3 class="text-sm font-bold text-white font-brand mb-2">Kanban visuel</h3>
+              <p class="text-xs text-zinc-500 mb-3">À faire → En cours → Revue → Terminé. Tâches créées automatiquement depuis les runs.</p>
+              <div class="space-y-1.5 text-[10px] text-zinc-400">
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-rose-500"></iconify-icon>Glisser-déposer entre colonnes</div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-rose-500"></iconify-icon>Filtrage par objet, priorité, assignation</div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-rose-500"></iconify-icon>Commentaires et suivi de discussion</div>
+              </div>
+            </div>
+            <!-- Projets -->
+            <div class="glass-card p-6 hover:border-purple-500/20 transition-colors">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:folder-check-linear" class="text-purple-400"></iconify-icon><span class="text-[10px] uppercase tracking-wider font-medium text-purple-400">Projets</span></div>
+              <h3 class="text-sm font-bold text-white font-brand mb-2">Projets de sécurité</h3>
+              <p class="text-xs text-zinc-500 mb-3">Regroupez des objets et checklists autour d'un périmètre. Statuts : Planning, Active, OnHold, Completed.</p>
+              <div class="space-y-1.5 text-[10px] text-zinc-400">
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-purple-500"></iconify-icon>Score consolidé et progression globale</div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-purple-500"></iconify-icon>Jalons (Milestones) et dates clés</div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-purple-500"></iconify-icon>Vue consolidée des tâches liées</div>
+              </div>
+            </div>
+            <!-- Cartographie -->
+            <div class="glass-card p-6 hover:border-cyan-500/20 transition-colors">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:share-circle-linear" class="text-cyan-400"></iconify-icon><span class="text-[10px] uppercase tracking-wider font-medium text-cyan-400">Cartographie</span></div>
+              <h3 class="text-sm font-bold text-white font-brand mb-2">Topologie Cytoscape.js</h3>
+              <p class="text-xs text-zinc-500 mb-3">Visualisation interactive des relations : connects_to, depends_on, hosts, authenticates, stores_data, contains, monitors...</p>
+              <div class="space-y-1.5 text-[10px] text-zinc-400">
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-cyan-500"></iconify-icon>Navigation zoom, pan, sélection</div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-cyan-500"></iconify-icon>Couleurs = niveau de conformité</div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-cyan-500"></iconify-icon>Points critiques et analyse d'impact</div>
+              </div>
+            </div>
+            <!-- Audit & Preuves -->
+            <div class="glass-card p-6 hover:border-emerald-500/20 transition-colors">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:document-add-linear" class="text-emerald-400"></iconify-icon><span class="text-[10px] uppercase tracking-wider font-medium text-emerald-400">Audit &amp; Preuves</span></div>
+              <h3 class="text-sm font-bold text-white font-brand mb-2">Traçabilité complète</h3>
+              <p class="text-xs text-zinc-500 mb-3">Journal d'audit automatique + gestion des preuves (upload fichiers, captures, liens) stockées dans MinIO S3.</p>
+              <div class="space-y-1.5 text-[10px] text-zinc-400">
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-emerald-500"></iconify-icon>Enregistrement automatique de toute action</div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-emerald-500"></iconify-icon>Filtrage, recherche plein texte, export</div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-emerald-500"></iconify-icon>Evidence liée à un contrôle spécifique</div>
+              </div>
+            </div>
+            <!-- Référentiels -->
+            <div class="glass-card p-6 hover:border-blue-500/20 transition-colors">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:library-linear" class="text-blue-400"></iconify-icon><span class="text-[10px] uppercase tracking-wider font-medium text-blue-400">Référentiels</span></div>
+              <h3 class="text-sm font-bold text-white font-brand mb-2">Frameworks de sécurité</h3>
+              <p class="text-xs text-zinc-500 mb-3">ISO 27001, NIST CSF, OWASP Top 10, CIS Benchmarks et frameworks internes.</p>
+              <div class="space-y-1.5 text-[10px] text-zinc-400">
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-blue-500"></iconify-icon>Import depuis la bibliothèque communautaire</div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-blue-500"></iconify-icon>Parcours hiérarchique des contrôles</div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="solar:arrow-right-linear" class="text-blue-500"></iconify-icon>Liaison automatique checklists ↔ contrôles</div>
+              </div>
+            </div>
+            <!-- Rapports -->
+            <div class="glass-card p-6 hover:border-amber-500/20 transition-colors">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:chart-2-linear" class="text-amber-400"></iconify-icon><span class="text-[10px] uppercase tracking-wider font-medium text-amber-400">Rapports</span></div>
+              <h3 class="text-sm font-bold text-white font-brand mb-2">Vues exportables</h3>
+              <p class="text-xs text-zinc-500">Génération par projet, objet ou périmètre. Vue consolidée des scores, export et partage. Historique des rapports.</p>
+            </div>
+            <!-- Incidents -->
+            <div class="glass-card p-6 hover:border-rose-500/20 transition-colors">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:danger-triangle-linear" class="text-rose-400"></iconify-icon><span class="text-[10px] uppercase tracking-wider font-medium text-rose-400">Incidents</span></div>
+              <h3 class="text-sm font-bold text-white font-brand mb-2">Gestion des incidents</h3>
+              <p class="text-xs text-zinc-500 mb-3">4 niveaux (Low, Medium, High, Critical). Suivi : ouvert → en cours → résolu → clos.</p>
+              <div class="flex items-center gap-2 mt-2">
+                <span class="px-2 py-0.5 rounded text-[10px] bg-zinc-500/10 text-zinc-400 border border-zinc-500/20">Low</span>
+                <span class="px-2 py-0.5 rounded text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20">Med</span>
+                <span class="px-2 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20">High</span>
+                <span class="px-2 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-400 border border-rose-500/20">Crit</span>
+              </div>
+            </div>
+            <!-- Admin -->
+            <div class="glass-card p-6 hover:border-purple-500/20 transition-colors">
+              <div class="flex items-center gap-2 mb-3"><iconify-icon icon="solar:users-group-rounded-linear" class="text-purple-400"></iconify-icon><span class="text-[10px] uppercase tracking-wider font-medium text-purple-400">Administration</span></div>
+              <h3 class="text-sm font-bold text-white font-brand mb-2">Utilisateurs &amp; RBAC</h3>
+              <p class="text-xs text-zinc-500">Gestion des utilisateurs, groupes (avec héritage), rôles prédéfinis et permissions directes.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- 7. ARCHITECTURE & RBAC (existant)     -->
+      <!-- ══════════════════════════════════════ -->
+      <section id="architecture" class="py-24 px-6 border-t border-white/[0.08] bg-surfaceHighlight/50">
+        <div class="max-w-6xl mx-auto">
+          <div class="mb-12">
+            <p class="text-[10px] uppercase tracking-wider text-emerald-400 font-medium mb-3">Architecture</p>
+            <h2 class="text-2xl font-bold text-white mb-4 font-brand">Stack moderne et sécurisée</h2>
+          </div>
+          <div class="flex flex-col md:flex-row gap-12">
+            <div class="flex-1">
+              <div class="relative p-8 rounded-xl glass-card">
+                <div class="flex flex-col gap-6 relative z-10">
+                  <div class="p-4 rounded-lg border border-white/[0.08] bg-zinc-900/50 flex justify-between items-center">
+                    <div><span class="text-[10px] font-mono text-zinc-500">CLIENT :80</span><div class="text-white font-medium text-sm">Angular 18 + Nginx</div></div>
+                    <iconify-icon icon="logos:angular-icon" class="text-xl opacity-50 grayscale hover:grayscale-0 transition-all"></iconify-icon>
+                  </div>
+                  <div class="h-6 w-px bg-zinc-700 mx-auto"></div>
+                  <div class="p-4 rounded-lg border border-emerald-900/30 bg-emerald-950/10 flex justify-between items-center">
+                    <div><span class="text-[10px] font-mono text-emerald-600">API :3000</span><div class="text-white font-medium text-sm">NestJS 10</div></div>
+                    <iconify-icon icon="logos:nestjs" class="text-xl opacity-80 hover:opacity-100 transition-all"></iconify-icon>
+                  </div>
+                  <div class="grid grid-cols-4 gap-2">
+                    <div class="p-3 rounded-lg border border-white/[0.08] bg-zinc-900/50 text-center"><iconify-icon icon="simple-icons:postgresql" class="text-blue-400 mb-1"></iconify-icon><div class="text-[10px] text-zinc-400">Postgres 16</div></div>
+                    <div class="p-3 rounded-lg border border-white/[0.08] bg-zinc-900/50 text-center"><iconify-icon icon="simple-icons:openpolicyagent" class="text-purple-400 mb-1"></iconify-icon><div class="text-[10px] text-zinc-400">OPA</div></div>
+                    <div class="p-3 rounded-lg border border-white/[0.08] bg-zinc-900/50 text-center"><iconify-icon icon="simple-icons:keycloak" class="text-amber-400 mb-1"></iconify-icon><div class="text-[10px] text-zinc-400">Keycloak 26</div></div>
+                    <div class="p-3 rounded-lg border border-white/[0.08] bg-zinc-900/50 text-center"><iconify-icon icon="simple-icons:minio" class="text-rose-400 mb-1"></iconify-icon><div class="text-[10px] text-zinc-400">MinIO S3</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="rbac" class="flex-1">
+              <h3 class="text-lg font-bold text-white mb-6 font-brand">Modèle RBAC granulaire</h3>
+              <p class="text-xs text-zinc-400 leading-relaxed mb-4">6 rôles prédéfinis, 17 types de ressources, 6 actions (read, create, update, delete, export, manage). Permissions effectives = union des rôles directs + groupes + permissions directes + privilège créateur. Autorisation fine via OPA / Rego en temps réel.</p>
+              <div class="overflow-hidden rounded-lg border border-white/[0.08]">
+                <table class="w-full text-left text-xs" style="margin:0">
+                  <thead class="bg-zinc-900 text-[10px] uppercase tracking-wider text-zinc-400 font-medium">
+                    <tr><th class="p-3">Rôle</th><th class="p-3">Accès</th><th class="p-3">Périmètre</th></tr>
+                  </thead>
+                  <tbody class="divide-y divide-white/[0.06] bg-black text-zinc-300 text-xs">
+                    <tr><td class="p-3 font-mono text-emerald-400">SecurityAdmin</td><td class="p-3">Full Access</td><td class="p-3">Global + Admin</td></tr>
+                    <tr><td class="p-3 font-mono text-blue-400">SecurityManager</td><td class="p-3">Write / Manage</td><td class="p-3">Projets, Objets, Checklists</td></tr>
+                    <tr><td class="p-3 font-mono text-purple-400">ProjectOwner</td><td class="p-3">Manage Project</td><td class="p-3">Projets dont il est propriétaire</td></tr>
+                    <tr><td class="p-3 font-mono text-amber-400">Auditor</td><td class="p-3">Read + Export</td><td class="p-3">Logs, Reports, Evidence</td></tr>
+                    <tr><td class="p-3 font-mono text-cyan-400">Developer</td><td class="p-3">Read + Execute</td><td class="p-3">Son périmètre</td></tr>
+                    <tr><td class="p-3 font-mono text-zinc-400">Viewer</td><td class="p-3">Read Only</td><td class="p-3">Ressources autorisées</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- 8. SÉCURITÉ DE LA PLATEFORME          -->
+      <!-- ══════════════════════════════════════ -->
+      <section id="security" class="py-24 px-6 border-t border-white/[0.08]">
+        <div class="max-w-6xl mx-auto">
+          <div class="mb-12">
+            <p class="text-[10px] uppercase tracking-wider text-emerald-400 font-medium mb-3">Sécurité</p>
+            <h2 class="text-2xl font-bold text-white mb-4 font-brand">Sécurité intégrée à chaque couche</h2>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-12">
+            <div class="glass-card p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="solar:key-minimalistic-square-linear" class="text-emerald-400"></iconify-icon><span class="text-xs font-bold text-white font-brand">OIDC + PKCE</span></div><p class="text-[10px] text-zinc-500">Flux OpenID Connect via Keycloak</p></div>
+            <div class="glass-card p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="solar:shield-keyhole-linear" class="text-emerald-400"></iconify-icon><span class="text-xs font-bold text-white font-brand">JWT</span></div><p class="text-[10px] text-zinc-500">Tokens signés pour l'authentification API</p></div>
+            <div class="glass-card p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="solar:smartphone-2-linear" class="text-emerald-400"></iconify-icon><span class="text-xs font-bold text-white font-brand">MFA / TOTP</span></div><p class="text-[10px] text-zinc-500">Authentification multi-facteurs</p></div>
+            <div class="glass-card p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="solar:code-square-linear" class="text-emerald-400"></iconify-icon><span class="text-xs font-bold text-white font-brand">Policy-as-Code</span></div><p class="text-[10px] text-zinc-500">Autorisation fine via OPA / Rego</p></div>
+            <div class="glass-card p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="solar:users-group-rounded-linear" class="text-emerald-400"></iconify-icon><span class="text-xs font-bold text-white font-brand">RBAC</span></div><p class="text-[10px] text-zinc-500">Contrôle d'accès basé sur les rôles</p></div>
+            <div class="glass-card p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="solar:clipboard-list-linear" class="text-emerald-400"></iconify-icon><span class="text-xs font-bold text-white font-brand">Audit trail</span></div><p class="text-[10px] text-zinc-500">Journal automatique de toute action</p></div>
+            <div class="glass-card p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="solar:lock-password-linear" class="text-emerald-400"></iconify-icon><span class="text-xs font-bold text-white font-brand">Hashage</span></div><p class="text-[10px] text-zinc-500">Mots de passe hashés (bcryptjs)</p></div>
+            <div class="glass-card p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="solar:shield-check-linear" class="text-emerald-400"></iconify-icon><span class="text-xs font-bold text-white font-brand">Rate Limiting</span></div><p class="text-[10px] text-zinc-500">100 req/60s + Helmet + CORS</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- 9. RÉFÉRENTIELS COMMUNAUTAIRES         -->
+      <!-- ══════════════════════════════════════ -->
+      <section id="community" class="py-24 px-6 border-t border-white/[0.08] bg-surface/30">
+        <div class="max-w-6xl mx-auto">
+          <div class="flex flex-col md:flex-row gap-12">
+            <div class="flex-1">
+              <p class="text-[10px] uppercase tracking-wider text-emerald-400 font-medium mb-3">Communauté</p>
+              <h2 class="text-2xl font-bold text-white mb-4 font-brand">Référentiels Open Source</h2>
+              <p class="text-xs text-zinc-400 leading-relaxed mb-6">Bibliothèque communautaire de référentiels partagés et ouverts aux contributions. Importez ISO 27001, NIST CSF, OWASP Top 10, CIS Benchmarks en un clic depuis l'interface.</p>
+              <div class="space-y-3 text-xs text-zinc-400 mb-6">
+                <div class="flex items-center gap-2"><span class="text-emerald-400 font-mono text-[10px]">1.</span> Référentiels stockés en JSON dans le dépôt communautaire</div>
+                <div class="flex items-center gap-2"><span class="text-emerald-400 font-mono text-[10px]">2.</span> Parcourir les frameworks avec leurs contrôles</div>
+                <div class="flex items-center gap-2"><span class="text-emerald-400 font-mono text-[10px]">3.</span> Importer un référentiel complet en un clic</div>
+                <div class="flex items-center gap-2"><span class="text-emerald-400 font-mono text-[10px]">4.</span> Adaptable sans affecter la version communautaire</div>
+              </div>
+              <a href="https://github.com/zlorgoncho1/osci-referentiel" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-xs text-emerald-400 hover:text-emerald-300 transition-colors no-underline"><iconify-icon icon="simple-icons:github"></iconify-icon> github.com/zlorgoncho1/osci-referentiel</a>
+            </div>
+            <div class="flex-1">
+              <div class="rounded-xl overflow-hidden glass-card font-mono text-xs">
+                <div class="bg-zinc-900 px-4 py-2 border-b border-white/[0.06] text-[10px] text-zinc-500">referentiel.json</div>
+<pre class="p-5 text-zinc-300 leading-6" style="margin:0;background:transparent;overflow-x:auto;"><span class="text-zinc-500">{</span>
+  <span class="text-emerald-400">"code"</span>: <span class="text-amber-300">"ISO-27001"</span>,
+  <span class="text-emerald-400">"name"</span>: <span class="text-amber-300">"ISO 27001"</span>,
+  <span class="text-emerald-400">"version"</span>: <span class="text-amber-300">"1.0"</span>,
+  <span class="text-emerald-400">"controls"</span>: [
+    { <span class="text-emerald-400">"code"</span>: <span class="text-amber-300">"A.5.1"</span>,
+      <span class="text-emerald-400">"title"</span>: <span class="text-amber-300">"Politique de sécurité"</span> }
+  ],
+  <span class="text-emerald-400">"checklists"</span>: [
+    { <span class="text-emerald-400">"title"</span>: <span class="text-amber-300">"Gouvernance"</span>,
+      <span class="text-emerald-400">"criticality"</span>: <span class="text-amber-300">"High"</span> }
+  ]
+<span class="text-zinc-500">}</span></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- 10. PARCOURS UTILISATEUR TYPE          -->
+      <!-- ══════════════════════════════════════ -->
+      <section id="journey" class="py-24 px-6 border-t border-white/[0.08]">
+        <div class="max-w-4xl mx-auto">
+          <div class="text-center mb-16">
+            <p class="text-[10px] uppercase tracking-wider text-emerald-400 font-medium mb-3">Parcours type</p>
+            <h2 class="text-2xl font-bold text-white mb-4 font-brand">Campagne d'audit en 10 étapes</h2>
+          </div>
+          <div class="space-y-3">
+            <div class="glass-card p-4 flex items-center gap-4"><span class="text-emerald-400 font-mono font-bold text-sm w-8 shrink-0">01</span><div><span class="text-xs font-bold text-white font-brand">Connexion</span><span class="text-[10px] text-zinc-500 ml-2">Keycloak OIDC + MFA → Cockpit</span></div></div>
+            <div class="glass-card p-4 flex items-center gap-4"><span class="text-emerald-400 font-mono font-bold text-sm w-8 shrink-0">02</span><div><span class="text-xs font-bold text-white font-brand">Création du projet</span><span class="text-[10px] text-zinc-500 ml-2">Définir le périmètre (ex. "Audit SI Finance Q1 2026")</span></div></div>
+            <div class="glass-card p-4 flex items-center gap-4"><span class="text-emerald-400 font-mono font-bold text-sm w-8 shrink-0">03</span><div><span class="text-xs font-bold text-white font-brand">Ajout des objets</span><span class="text-[10px] text-zinc-500 ml-2">Serveurs, applications, bases de données...</span></div></div>
+            <div class="glass-card p-4 flex items-center gap-4"><span class="text-emerald-400 font-mono font-bold text-sm w-8 shrink-0">04</span><div><span class="text-xs font-bold text-white font-brand">Import des référentiels</span><span class="text-[10px] text-zinc-500 ml-2">ISO 27001, NIST CSF, CIS depuis la communauté</span></div></div>
+            <div class="glass-card p-4 flex items-center gap-4"><span class="text-emerald-400 font-mono font-bold text-sm w-8 shrink-0">05</span><div><span class="text-xs font-bold text-white font-brand">Association des checklists</span><span class="text-[10px] text-zinc-500 ml-2">Sélectionner et associer aux objets du projet</span></div></div>
+            <div class="glass-card p-4 flex items-center gap-4"><span class="text-emerald-400 font-mono font-bold text-sm w-8 shrink-0">06</span><div><span class="text-xs font-bold text-white font-brand">Exécution des runs</span><span class="text-[10px] text-zinc-500 ml-2">Évaluer chaque contrôle + attacher les preuves</span></div></div>
+            <div class="glass-card p-4 flex items-center gap-4"><span class="text-emerald-400 font-mono font-bold text-sm w-8 shrink-0">07</span><div><span class="text-xs font-bold text-white font-brand">Analyse du score</span><span class="text-[10px] text-zinc-500 ml-2">Security Integrity Score global et par objet</span></div></div>
+            <div class="glass-card p-4 flex items-center gap-4"><span class="text-emerald-400 font-mono font-bold text-sm w-8 shrink-0">08</span><div><span class="text-xs font-bold text-white font-brand">Remédiation</span><span class="text-[10px] text-zinc-500 ml-2">Tâches auto-créées dans le Kanban → prioriser, assigner</span></div></div>
+            <div class="glass-card p-4 flex items-center gap-4"><span class="text-emerald-400 font-mono font-bold text-sm w-8 shrink-0">09</span><div><span class="text-xs font-bold text-white font-brand">Re-run et validation</span><span class="text-[10px] text-zinc-500 ml-2">Relancer les runs pour vérifier la conformité</span></div></div>
+            <div class="glass-card p-4 flex items-center gap-4"><span class="text-emerald-400 font-mono font-bold text-sm w-8 shrink-0">10</span><div><span class="text-xs font-bold text-white font-brand">Rapport et audit</span><span class="text-[10px] text-zinc-500 ml-2">Générer le rapport, exporter journal et preuves</span></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- 11. DÉPLOIEMENT                       -->
+      <!-- ══════════════════════════════════════ -->
+      <section id="deploy" class="py-24 px-6 border-t border-white/[0.08] bg-surface/30">
+        <div class="max-w-4xl mx-auto text-center mb-12">
+          <p class="text-[10px] uppercase tracking-wider text-emerald-400 font-medium mb-3">Déploiement</p>
+          <h2 class="text-2xl font-bold text-white mb-4 font-brand">Opérationnel en 90 secondes</h2>
+          <p class="text-xs text-zinc-400">Stack entièrement conteneurisée via Docker Compose. 7 services : web, api, postgres, keycloak, opa, minio, realm-init.</p>
+        </div>
+
+        <div class="max-w-3xl mx-auto rounded-xl overflow-hidden glass-card font-mono text-sm">
+          <div class="bg-zinc-900 px-4 py-2 flex items-center gap-2 border-b border-white/[0.06]">
+            <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-rose-500/50"></div><div class="w-2.5 h-2.5 rounded-full bg-amber-500/50"></div><div class="w-2.5 h-2.5 rounded-full bg-emerald-500/50"></div></div>
+            <div class="ml-4 text-[10px] text-zinc-500">bash — osci-setup</div>
+          </div>
+          <div class="p-6 text-zinc-300 space-y-4">
+            <div><span class="text-emerald-500 select-none mr-2">➜</span><span class="text-zinc-500 select-none">~</span> <span class="text-white">git clone https://github.com/zlorgoncho1/osci-platform</span></div>
+            <div><span class="text-emerald-500 select-none mr-2">➜</span><span class="text-zinc-500 select-none">~</span> <span class="text-white">cd osci-platform &amp;&amp; cp .env.example .env</span></div>
+            <div><span class="text-emerald-500 select-none mr-2">➜</span><span class="text-zinc-500 select-none">~/osci-platform</span> <span class="text-white">docker compose up -d</span></div>
+            <div class="pt-2 text-xs text-zinc-500 leading-5">
+              <span class="text-emerald-500">✔</span> Container osci-postgres started<br>
+              <span class="text-emerald-500">✔</span> Container osci-keycloak started<br>
+              <span class="text-emerald-500">✔</span> Container osci-opa started<br>
+              <span class="text-emerald-500">✔</span> Container osci-minio started<br>
+              <span class="text-emerald-500">✔</span> Container osci-api started<br>
+              <span class="text-emerald-500">✔</span> Container osci-web started<br>
+              <span class="text-blue-400">ℹ</span> Platform ready at http://localhost:80
+            </div>
+            <div class="animate-pulse text-emerald-500">_</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- 12. BONNES PRATIQUES                   -->
+      <!-- ══════════════════════════════════════ -->
+      <section id="practices" class="py-24 px-6 border-t border-white/[0.08]">
+        <div class="max-w-6xl mx-auto">
+          <div class="mb-12">
+            <p class="text-[10px] uppercase tracking-wider text-emerald-400 font-medium mb-3">Recommandations</p>
+            <h2 class="text-2xl font-bold text-white mb-4 font-brand">Bonnes pratiques</h2>
+          </div>
+          <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="glass-card p-5">
+              <h4 class="text-xs font-bold text-white font-brand mb-2">Structurer les projets</h4>
+              <p class="text-[10px] text-zinc-500 leading-relaxed">Un projet = un périmètre clair. Nommez explicitement (ex. "Audit SI Finance Q1 2026"). Associez tous les objets concernés pour un score représentatif.</p>
+            </div>
+            <div class="glass-card p-5">
+              <h4 class="text-xs font-bold text-white font-brand mb-2">Nommer les objets</h4>
+              <p class="text-[10px] text-zinc-500 leading-relaxed">Convention de nommage cohérente dans toute l'organisation. Indiquez le type réel et ajoutez suffisamment de contexte dans la description.</p>
+            </div>
+            <div class="glass-card p-5">
+              <h4 class="text-xs font-bold text-white font-brand mb-2">Choisir les bons référentiels</h4>
+              <p class="text-[10px] text-zinc-500 leading-relaxed">Utilisez les référentiels communautaires adaptés. Commencez par un périmètre restreint. Associez les checklists aux types d'objets pertinents.</p>
+            </div>
+            <div class="glass-card p-5">
+              <h4 class="text-xs font-bold text-white font-brand mb-2">Runs réguliers</h4>
+              <p class="text-[10px] text-zinc-500 leading-relaxed">Planifiez des campagnes à intervalles réguliers. Documentez avec des preuves. "Non applicable" est préférable à un contrôle ignoré.</p>
+            </div>
+            <div class="glass-card p-5">
+              <h4 class="text-xs font-bold text-white font-brand mb-2">Suivre la remédiation</h4>
+              <p class="text-[10px] text-zinc-500 leading-relaxed">Traitez par priorité. Ne laissez pas les tâches s'accumuler. Relancez un run après correction. Utilisez le Kanban en réunion d'équipe.</p>
+            </div>
+            <div class="glass-card p-5">
+              <h4 class="text-xs font-bold text-white font-brand mb-2">Capitaliser sur les preuves</h4>
+              <p class="text-[10px] text-zinc-500 leading-relaxed">Attachez une preuve à chaque contrôle, même conforme. Captures horodatées, exports de configuration ou liens vers des documents.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- 13. GLOSSAIRE                          -->
+      <!-- ══════════════════════════════════════ -->
+      <section id="glossary" class="py-24 px-6 border-t border-white/[0.08] bg-surface/30">
+        <div class="max-w-4xl mx-auto">
+          <div class="mb-12">
+            <p class="text-[10px] uppercase tracking-wider text-emerald-400 font-medium mb-3">Référence</p>
+            <h2 class="text-2xl font-bold text-white mb-4 font-brand">Glossaire</h2>
+          </div>
+          <div class="overflow-hidden rounded-xl glass-card">
+            <table class="w-full text-left" style="margin:0">
+              <thead class="bg-zinc-900 text-[10px] uppercase tracking-wider text-zinc-400 font-medium">
+                <tr><th class="p-3">Terme</th><th class="p-3">Définition</th></tr>
+              </thead>
+              <tbody class="divide-y divide-white/[0.06] text-xs">
+                <tr><td class="p-3 text-white font-mono font-medium">Checklist</td><td class="p-3 text-zinc-400">Liste de contrôles de sécurité à vérifier sur un ou plusieurs objets</td></tr>
+                <tr><td class="p-3 text-white font-mono font-medium">Cockpit</td><td class="p-3 text-zinc-400">Tableau de bord principal affichant les indicateurs globaux</td></tr>
+                <tr><td class="p-3 text-white font-mono font-medium">Contrôle</td><td class="p-3 text-zinc-400">Point de vérification issu d'un référentiel (ex. "Le chiffrement TLS est activé")</td></tr>
+                <tr><td class="p-3 text-white font-mono font-medium">Evidence</td><td class="p-3 text-zinc-400">Document, fichier ou lien attaché à un contrôle lors d'un run</td></tr>
+                <tr><td class="p-3 text-white font-mono font-medium">Objet</td><td class="p-3 text-zinc-400">Élément du SI soumis à des contrôles (serveur, application, dépôt, identité...)</td></tr>
+                <tr><td class="p-3 text-white font-mono font-medium">OPA</td><td class="p-3 text-zinc-400">Open Policy Agent — Moteur d'autorisation policy-as-code (Rego)</td></tr>
+                <tr><td class="p-3 text-white font-mono font-medium">Référentiel</td><td class="p-3 text-zinc-400">Ensemble structuré de contrôles (ISO 27001, NIST, OWASP...)</td></tr>
+                <tr><td class="p-3 text-white font-mono font-medium">Run</td><td class="p-3 text-zinc-400">Exécution d'une checklist à un instant donné, produisant un score</td></tr>
+                <tr><td class="p-3 text-white font-mono font-medium">Score</td><td class="p-3 text-zinc-400">Security Integrity Score — Indicateur de conformité calculé automatiquement</td></tr>
+                <tr><td class="p-3 text-white font-mono font-medium">Tâche</td><td class="p-3 text-zinc-400">Action corrective générée lorsqu'un contrôle est non conforme</td></tr>
+                <tr><td class="p-3 text-white font-mono font-medium">Zero Trust</td><td class="p-3 text-zinc-400">Modèle de sécurité qui n'accorde aucune confiance implicite</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- FOOTER                                -->
+      <!-- ══════════════════════════════════════ -->
+      <footer class="border-t border-white/[0.08] bg-black pt-16 pb-8">
+        <div class="max-w-6xl mx-auto px-6">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+            <div class="col-span-2 md:col-span-1">
+              <div class="flex items-center gap-3 mb-4">
+                <img src="./logo-white.png" alt="OSCI Platform" class="h-8">
+                <span class="text-white font-semibold text-sm font-brand">OSCI Platform</span>
+              </div>
+              <p class="text-[10px] text-zinc-500 leading-relaxed">
+                Plateforme de pilotage de la sécurité Zero Trust.<br>
+                Centralisez, mesurez, remédiez.
+              </p>
+            </div>
+            <div>
+              <h4 class="text-[10px] uppercase tracking-wider text-zinc-400 font-medium mb-4">Plateforme</h4>
+              <ul class="space-y-2 text-xs text-zinc-500" style="list-style:none;padding:0">
+                <li><a onclick="scrollToSection('problem')" class="hover:text-zinc-300 transition-colors no-underline text-zinc-500 cursor-pointer">Problème</a></li>
+                <li><a onclick="scrollToSection('modules')" class="hover:text-zinc-300 transition-colors no-underline text-zinc-500 cursor-pointer">Modules</a></li>
+                <li><a onclick="scrollToSection('architecture')" class="hover:text-zinc-300 transition-colors no-underline text-zinc-500 cursor-pointer">Architecture</a></li>
+                <li><a onclick="scrollToSection('deploy')" class="hover:text-zinc-300 transition-colors no-underline text-zinc-500 cursor-pointer">Déploiement</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="text-[10px] uppercase tracking-wider text-zinc-400 font-medium mb-4">Ressources</h4>
+              <ul class="space-y-2 text-xs text-zinc-500" style="list-style:none;padding:0">
+                <li><a href="./#docs" class="hover:text-zinc-300 transition-colors no-underline text-zinc-500">Documentation</a></li>
+                <li><a href="https://github.com/zlorgoncho1/osci-platform" target="_blank" rel="noopener" class="hover:text-zinc-300 transition-colors no-underline text-zinc-500">Code source</a></li>
+                <li><a href="https://github.com/zlorgoncho1/osci-referentiel" target="_blank" rel="noopener" class="hover:text-zinc-300 transition-colors no-underline text-zinc-500">Référentiels communautaires</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="text-[10px] uppercase tracking-wider text-zinc-400 font-medium mb-4">Liens</h4>
+              <ul class="space-y-2 text-xs text-zinc-500" style="list-style:none;padding:0">
+                <li><a href="https://github.com/zlorgoncho1/osci-platform/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-zinc-300 transition-colors no-underline text-zinc-500">Licence</a></li>
+                <li><a onclick="scrollToSection('security')" class="hover:text-zinc-300 transition-colors no-underline text-zinc-500 cursor-pointer">Sécurité</a></li>
+              </ul>
+            </div>
+          </div>
+          <div class="pt-8 border-t border-white/[0.06] flex flex-col md:flex-row justify-between items-center gap-4">
+            <p class="text-[10px] text-zinc-600">zlorgoncho1 | OSCI Platform | 2026</p>
+            <a href="https://github.com/zlorgoncho1/osci-platform" target="_blank" rel="noopener" class="flex items-center gap-2 text-zinc-600 hover:text-zinc-300 transition-colors no-underline">
+              <iconify-icon icon="simple-icons:github"></iconify-icon>
+              <span class="text-[10px]">GitHub</span>
+            </a>
+          </div>
+        </div>
+      </footer>
+
+    </div><!-- /landing -->
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- DOCUMENTATION (shown when #docs or #docs/slug)         -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div id="doc-view" class="hidden">
+      <div class="doc-layout">
+        <aside id="doc-sidebar" class="doc-sidebar"></aside>
+        <article id="doc-content" class="doc-content"></article>
+      </div>
+    </div>
+  </main>
+
+  <!-- Docs-only footer (hidden on landing) -->
+  <footer id="docs-footer" class="site-footer hidden">
+    <p>zlorgoncho1 | OSCI Platform | 2026</p>
+  </footer>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

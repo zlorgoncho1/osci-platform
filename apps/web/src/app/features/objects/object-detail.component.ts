@@ -32,6 +32,11 @@ import { ScoreGaugeComponent } from '../../shared/components/score-gauge/score-g
                   'bg-zinc-500/10 border border-zinc-500/20 text-zinc-400': object.criticality === 'low'
                 }">{{ object.criticality }}</span>
               <span class="text-[10px] text-zinc-600 font-mono">ID: {{ object.id }}</span>
+              <a routerLink="/app/docs/module-objects"
+                 class="inline-flex items-center gap-1 ml-1 text-zinc-600 hover:text-emerald-400 transition-colors">
+                <iconify-icon icon="solar:book-2-linear" width="12"></iconify-icon>
+                <span class="text-[10px]">Guide</span>
+              </a>
             </div>
           </div>
         </div>

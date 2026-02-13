@@ -53,6 +53,11 @@ const DOMAINS = [
               <span class="px-2 py-0.5 rounded border border-zinc-700 bg-zinc-800/50 text-zinc-400 text-[10px]">{{ referentiel.code }}</span>
               <span class="px-2 py-0.5 rounded border border-zinc-700 bg-zinc-800/50 text-zinc-400 text-[10px]">{{ referentiel.version }}</span>
               <span class="px-2 py-0.5 rounded text-[10px] bg-zinc-800/50 text-zinc-400">{{ referentiel.type }}</span>
+              <a routerLink="/app/docs/module-referentiels"
+                 class="inline-flex items-center gap-1 ml-1 text-zinc-600 hover:text-emerald-400 transition-colors">
+                <iconify-icon icon="solar:book-2-linear" width="12"></iconify-icon>
+                <span class="text-[10px]">Guide</span>
+              </a>
             </div>
           </div>
         </div>

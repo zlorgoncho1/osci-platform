@@ -1,0 +1,45 @@
+{
+  "title": "Documentation OSCI",
+  "sections": [
+    {
+      "title": "Découverte",
+      "items": [
+        { "slug": "welcome", "title": "Bienvenue", "description": "Présentation de la plateforme OSCI" },
+        { "slug": "vision-and-value", "title": "Vision et valeur", "description": "À quoi sert OSCI et pour qui" },
+        { "slug": "key-concepts", "title": "Concepts clés", "description": "Objets, score, checklists, preuves, permissions" }
+      ]
+    },
+    {
+      "title": "Prise en main",
+      "items": [
+        { "slug": "deployment", "title": "Déploiement", "description": "Installer et déployer OSCI avec Docker Compose" },
+        { "slug": "getting-started", "title": "Premiers pas", "description": "Connexion, authentification et première utilisation" }
+      ]
+    },
+    {
+      "title": "Modules",
+      "items": [
+        { "slug": "module-cockpit", "title": "Cockpit", "description": "Vue d'ensemble et indicateurs" },
+        { "slug": "module-objects", "title": "Objets", "description": "Gestion des objets et groupes d'objets" },
+        { "slug": "module-checklists", "title": "Checklists", "description": "Création, exécution et suivi des checklists" },
+        { "slug": "module-remediation", "title": "Remédiation", "description": "Kanban de suivi des tâches correctives" },
+        { "slug": "module-projects", "title": "Projets", "description": "Gestion des projets de sécurité" },
+        { "slug": "module-cartography", "title": "Cartographie", "description": "Visualisation topologique des assets" },
+        { "slug": "module-audit", "title": "Audit et preuves", "description": "Journal d'audit et gestion des preuves" },
+        { "slug": "module-referentiels", "title": "Référentiels", "description": "Référentiels de contrôles et frameworks" },
+        { "slug": "module-reports", "title": "Rapports", "description": "Génération et consultation des rapports" },
+        { "slug": "module-incidents", "title": "Incidents", "description": "Déclaration et suivi des incidents" },
+        { "slug": "module-admin", "title": "Administration", "description": "Utilisateurs, groupes et rôles" }
+      ]
+    },
+    {
+      "title": "Référence",
+      "items": [
+        { "slug": "roles-and-permissions", "title": "Rôles et permissions", "description": "Modèle d'autorisation complet" },
+        { "slug": "referentiels-community", "title": "Référentiels communautaires", "description": "Import et contribution" },
+        { "slug": "best-practices", "title": "Bonnes pratiques", "description": "Recommandations d'usage" },
+        { "slug": "glossary", "title": "Glossaire", "description": "Définitions des termes clés" }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { PermissionService } from '../../core/services/permission.service';
@@ -7,14 +8,20 @@ import { PermissionService } from '../../core/services/permission.service';
 @Component({
   selector: 'app-user-groups-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div class="p-6 space-y-6">
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-xl font-bold text-white">User Groups</h1>
-          <p class="text-sm text-zinc-400 mt-1">Manage groups, members, roles and permissions</p>
+          <p class="text-sm text-zinc-400 mt-1">Manage groups, members, roles and permissions
+            <a routerLink="/app/docs/module-admin"
+               class="inline-flex items-center gap-1 ml-3 text-zinc-600 hover:text-emerald-400 transition-colors">
+              <iconify-icon icon="solar:book-2-linear" width="12"></iconify-icon>
+              <span class="text-[10px]">Guide</span>
+            </a>
+          </p>
         </div>
         <button
           *ngIf="permissionService.canGlobal('user_group', 'create')"

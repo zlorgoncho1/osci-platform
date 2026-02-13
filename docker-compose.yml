@@ -177,7 +177,8 @@ services:
   # ---------------------------------------------------------------------------
   web:
     build:
-      context: ./apps/web
+      context: .
+      dockerfile: apps/web/Dockerfile
       args:
         KEYCLOAK_URL: ${KEYCLOAK_URL}
         KEYCLOAK_REALM: ${KEYCLOAK_REALM}

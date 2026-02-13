@@ -1,0 +1,10 @@
+# Root .dockerignore — used by web build (context: .)
+**/node_modules
+**/.angular
+**/dist
+.git
+**/.env
+**/.env.*
+**/coverage
+**/.vscode
+**/.idea

@@ -33,6 +33,11 @@ import { PermissionService } from '../../core/services/permission.service';
                   'bg-zinc-500/15 border border-zinc-500/20 text-zinc-400': checklist.criticality === 'Low'
                 }">{{ checklist.criticality }}</span>
               <span class="text-[10px] text-zinc-600 font-mono">v{{ checklist.version || '1.0' }}</span>
+              <a routerLink="/app/docs/module-checklists"
+                 class="inline-flex items-center gap-1 ml-1 text-zinc-600 hover:text-emerald-400 transition-colors">
+                <iconify-icon icon="solar:book-2-linear" width="12"></iconify-icon>
+                <span class="text-[10px]">Guide</span>
+              </a>
             </div>
           </div>
         </div>

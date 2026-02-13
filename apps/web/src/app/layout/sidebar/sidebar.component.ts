@@ -108,6 +108,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
         { label: 'Roles', icon: 'solar:key-linear', route: '/app/admin/roles', resourceType: 'user' },
       ],
     },
+    {
+      title: 'Ressources',
+      items: [
+        { label: 'Documentation', icon: 'solar:book-2-linear', route: '/app/docs' },
+      ],
+    },
   ];
 
   visibleSections: NavSection[] = [];

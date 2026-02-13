@@ -30,7 +30,13 @@ import { PermissionService } from '../../core/services/permission.service';
                 class="text-2xl font-brand font-bold text-white bg-transparent border-b border-white/20 focus:outline-none" />
               <span class="px-2 py-0.5 rounded text-[10px] font-medium" [ngClass]="getStatusClass(project.status)">{{ project.status }}</span>
             </div>
-            <p class="text-sm text-zinc-400" *ngIf="!editing">{{ project.description || 'No description' }}</p>
+            <p class="text-sm text-zinc-400" *ngIf="!editing">{{ project.description || 'No description' }}
+              <a routerLink="/app/docs/module-projects"
+                 class="inline-flex items-center gap-1 ml-3 text-zinc-600 hover:text-emerald-400 transition-colors">
+                <iconify-icon icon="solar:book-2-linear" width="12"></iconify-icon>
+                <span class="text-[10px]">Guide</span>
+              </a>
+            </p>
             <textarea *ngIf="editing" [(ngModel)]="editData.description" rows="2"
               class="w-full text-sm text-zinc-400 bg-transparent border border-white/10 rounded px-2 py-1 focus:outline-none"></textarea>
             <div class="flex items-center gap-4 text-xs text-zinc-500">

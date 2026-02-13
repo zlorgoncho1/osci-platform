@@ -1,5 +1,6 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import {
   CdkDragDrop,
@@ -27,7 +28,7 @@ interface IncidentColumn {
 @Component({
   selector: 'app-remediation-kanban',
   standalone: true,
-  imports: [CommonModule, CdkDrag, CdkDropList, FormsModule],
+  imports: [CommonModule, RouterLink, CdkDrag, CdkDropList, FormsModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div class="space-y-6">
@@ -35,7 +36,13 @@ interface IncidentColumn {
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-brand font-bold text-white">Remediation Board</h1>
-          <p class="text-xs text-zinc-500 mt-1">{{ activeTab === 'tasks' ? 'Drag tasks between columns to update status' : 'Drag incidents between columns to update status' }}</p>
+          <p class="text-xs text-zinc-500 mt-1">{{ activeTab === 'tasks' ? 'Drag tasks between columns to update status' : 'Drag incidents between columns to update status' }}
+            <a routerLink="/app/docs/module-remediation"
+               class="inline-flex items-center gap-1 ml-3 text-zinc-600 hover:text-emerald-400 transition-colors">
+              <iconify-icon icon="solar:book-2-linear" width="12"></iconify-icon>
+              <span class="text-[10px]">Guide</span>
+            </a>
+          </p>
         </div>
         <div class="flex items-center gap-3" *ngIf="activeTab === 'tasks'">
           <select [(ngModel)]="selectedProjectId" (ngModelChange)="onFilterChange()"

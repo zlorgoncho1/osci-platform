@@ -30,7 +30,13 @@ import { Subscription } from 'rxjs';
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-brand font-bold text-white">Cartography</h1>
-          <p class="text-xs text-zinc-500 mt-1">Interactive topology mapping & impact analysis</p>
+          <p class="text-xs text-zinc-500 mt-1">Interactive topology mapping & impact analysis
+            <a routerLink="/app/docs/module-cartography"
+               class="inline-flex items-center gap-1 ml-3 text-zinc-600 hover:text-emerald-400 transition-colors">
+              <iconify-icon icon="solar:book-2-linear" width="12"></iconify-icon>
+              <span class="text-[10px]">Guide</span>
+            </a>
+          </p>
         </div>
         <div class="flex items-center gap-2">
           <!-- View Toggle -->

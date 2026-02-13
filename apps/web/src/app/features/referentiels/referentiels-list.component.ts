@@ -45,7 +45,13 @@ const DOMAINS = [
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-brand font-bold text-white">Referentiels</h1>
-          <p class="text-xs text-zinc-500 mt-1">Compliance frameworks (ISO 27001, NIST CSF, SOC2, etc.)</p>
+          <p class="text-xs text-zinc-500 mt-1">Compliance frameworks (ISO 27001, NIST CSF, SOC2, etc.)
+            <a routerLink="/app/docs/module-referentiels"
+               class="inline-flex items-center gap-1 ml-3 text-zinc-600 hover:text-emerald-400 transition-colors">
+              <iconify-icon icon="solar:book-2-linear" width="12"></iconify-icon>
+              <span class="text-[10px]">Guide</span>
+            </a>
+          </p>
         </div>
         <div class="flex items-center gap-3">
           <button (click)="openCommunityModal()"

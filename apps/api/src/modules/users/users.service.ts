@@ -99,6 +99,13 @@ export class UsersService {
       );
     }
 
+    // Validate custom password against Keycloak policy
+    if (dto.temporaryPassword && !this.passwordMeetsPolicy(dto.temporaryPassword)) {
+      throw new BadRequestException(
+        'Temporary password does not meet policy: minimum 12 characters, at least 1 uppercase, 1 lowercase, 1 digit, 1 special character.',
+      );
+    }
+
     let keycloakId: string | null = null;
     const tempPassword = dto.temporaryPassword || this.generateTempPassword();
 
@@ -136,13 +143,51 @@ export class UsersService {
     return Object.assign(saved, { temporaryPassword: tempPassword });
   }
 
+  /**
+   * Generate a temporary password that always meets the Keycloak policy:
+   * length >= 12, at least 1 uppercase, 1 lowercase, 1 digit, 1 special char.
+   */
   private generateTempPassword(): string {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
-    let password = '';
-    for (let i = 0; i < 16; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const lower = 'abcdefghjkmnpqrstuvwxyz';
+    const digits = '23456789';
+    const special = '!@#$%&*';
+    const all = upper + lower + digits + special;
+
+    const pick = (charset: string) =>
+      charset.charAt(Math.floor(Math.random() * charset.length));
+
+    // Guarantee at least one from each category
+    const mandatory = [pick(upper), pick(lower), pick(digits), pick(special)];
+
+    // Fill the rest up to 16 characters
+    const rest: string[] = [];
+    for (let i = 0; i < 12; i++) {
+      rest.push(pick(all));
     }
-    return password;
+
+    // Shuffle (Fisher-Yates) to avoid predictable positions
+    const chars = [...mandatory, ...rest];
+    for (let i = chars.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [chars[i], chars[j]] = [chars[j], chars[i]];
+    }
+
+    return chars.join('');
+  }
+
+  /**
+   * Check if a password meets the Keycloak policy:
+   * length >= 12, at least 1 uppercase, 1 lowercase, 1 digit, 1 special char.
+   */
+  private passwordMeetsPolicy(password: string): boolean {
+    return (
+      password.length >= 12 &&
+      /[A-Z]/.test(password) &&
+      /[a-z]/.test(password) &&
+      /[0-9]/.test(password) &&
+      /[^A-Za-z0-9]/.test(password)
+    );
   }
 
   async update(id: string, dto: UpdateUserDto): Promise<User> {
@@ -248,17 +293,33 @@ export class UsersService {
   ): Promise<{ temporaryPassword: string }> {
     const user = await this.findById(id);
     const tempPassword = temporaryPassword || this.generateTempPassword();
-    const hash = await this.hashPassword(tempPassword);
-    await this.updatePassword(id, hash, true);
 
-    // Sync to Keycloak
+    // Validate custom password against Keycloak policy
+    if (temporaryPassword && !this.passwordMeetsPolicy(temporaryPassword)) {
+      throw new BadRequestException(
+        'Password does not meet policy: minimum 12 characters, at least 1 uppercase, 1 lowercase, 1 digit, 1 special character.',
+      );
+    }
+
+    // Sync to Keycloak FIRST — don't update DB if Keycloak rejects the password
     if (user.keycloakId && this.keycloakAdmin.isEnabled) {
       try {
         await this.keycloakAdmin.resetPassword(user.keycloakId, tempPassword, true);
       } catch (err: any) {
-        this.logger.warn(`Failed to reset password in Keycloak: ${err.message}`);
+        const kcMessage =
+          err.response?.data?.error_description ||
+          err.response?.data?.errorMessage ||
+          err.message;
+        this.logger.error(`Keycloak rejected password reset: ${kcMessage}`);
+        throw new BadRequestException(
+          `Password reset failed (Keycloak): ${kcMessage}`,
+        );
       }
     }
+
+    // Keycloak accepted (or not configured) — now update local DB
+    const hash = await this.hashPassword(tempPassword);
+    await this.updatePassword(id, hash, true);
 
     return { temporaryPassword: tempPassword };
   }

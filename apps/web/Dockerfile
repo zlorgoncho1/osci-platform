@@ -2,18 +2,25 @@
 # OSCI Platform - Web Dockerfile (Angular + Nginx)
 # Multi-stage build for minimal production image
 # =============================================================================
+# Build context: project root (.)
+# WORKDIR mirrors the repo layout so angular.json "../../docs" resolves.
+# =============================================================================
 
 # ---------------------------------------------------------------------------
 # Stage 1: Build
 # ---------------------------------------------------------------------------
 FROM node:20-alpine AS builder
 
-WORKDIR /app
+WORKDIR /build/apps/web
 
-COPY package*.json ./
+COPY apps/web/package*.json ./
 RUN npm ci --ignore-scripts
 
-COPY . .
+# Copy web application source
+COPY apps/web/ .
+
+# Copy docs directory (angular.json asset: "input": "../../docs" → /build/docs/)
+COPY docs/ /build/docs/
 
 ARG KEYCLOAK_URL=http://localhost:8080
 ARG KEYCLOAK_REALM=osci
@@ -32,11 +39,11 @@ FROM nginx:1.27-alpine
 
 RUN apk add --no-cache bash
 
-COPY --from=builder /app/dist/osci-web/browser /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /build/apps/web/dist/osci-web/browser /usr/share/nginx/html
+COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Runtime env substitution script
-COPY docker-entrypoint.sh /docker-entrypoint.sh
+COPY apps/web/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 80

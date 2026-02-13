@@ -22,6 +22,7 @@
     "angular-oauth2-oidc": "^17.0.0",
     "cytoscape": "^3.33.1",
     "iconify-icon": "^2.1.0",
+    "marked": "^17.0.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.6.0",
     "zone.js": "~0.14.0"

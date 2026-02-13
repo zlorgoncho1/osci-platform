@@ -118,6 +118,15 @@ export const routes: Routes = [
         canActivate: [CanAccessGuard],
         data: { resourceType: 'incident', action: 'read' },
       },
+      // Documentation
+      {
+        path: 'docs',
+        loadComponent: () => import('./features/docs/doc-viewer.component').then(m => m.DocViewerComponent),
+      },
+      {
+        path: 'docs/:slug',
+        loadComponent: () => import('./features/docs/doc-viewer.component').then(m => m.DocViewerComponent),
+      },
       // Admin routes
       {
         path: 'admin/users',

@@ -18,7 +18,13 @@ import { PermissionService } from '../../core/services/permission.service';
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-brand font-bold text-white">Checklists</h1>
-          <p class="text-xs text-zinc-500 mt-1">Security assessment templates</p>
+          <p class="text-xs text-zinc-500 mt-1">Security assessment templates
+            <a routerLink="/app/docs/module-checklists"
+               class="inline-flex items-center gap-1 ml-3 text-zinc-600 hover:text-emerald-400 transition-colors">
+              <iconify-icon icon="solar:book-2-linear" width="12"></iconify-icon>
+              <span class="text-[10px]">Guide</span>
+            </a>
+          </p>
         </div>
         <div class="flex items-center gap-2">
           <button *ngIf="selectedIds.size > 0 && perm.canGlobal('checklist', 'delete')" (click)="bulkDelete()"

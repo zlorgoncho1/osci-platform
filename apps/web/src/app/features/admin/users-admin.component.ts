@@ -1,5 +1,6 @@
 import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { PermissionService } from '../../core/services/permission.service';
@@ -7,14 +8,20 @@ import { PermissionService } from '../../core/services/permission.service';
 @Component({
   selector: 'app-users-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div class="p-6 space-y-6">
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-xl font-bold text-white">User Management</h1>
-          <p class="text-sm text-zinc-400 mt-1">Manage user roles, access and Keycloak sync</p>
+          <p class="text-sm text-zinc-400 mt-1">Manage user roles, access and Keycloak sync
+            <a routerLink="/app/docs/module-admin"
+               class="inline-flex items-center gap-1 ml-3 text-zinc-600 hover:text-emerald-400 transition-colors">
+              <iconify-icon icon="solar:book-2-linear" width="12"></iconify-icon>
+              <span class="text-[10px]">Guide</span>
+            </a>
+          </p>
         </div>
         <div class="flex gap-2">
           <button
@@ -99,7 +106,7 @@ import { PermissionService } from '../../core/services/permission.service';
                   </button>
                   <button
                     *ngIf="permissionService.isAdmin"
-                    (click)="resetPassword(user)"
+                    (click)="confirmResetPassword(user)"
                     class="px-2 py-1 text-xs bg-amber-600/20 text-amber-400 rounded hover:bg-amber-600/30 transition-colors"
                     title="Reset Password">
                     <iconify-icon icon="solar:key-bold" width="14"></iconify-icon>
@@ -112,16 +119,19 @@ import { PermissionService } from '../../core/services/permission.service';
                     [title]="user.enabled !== false ? 'Disable' : 'Enable'">
                     <iconify-icon [icon]="user.enabled !== false ? 'solar:lock-bold' : 'solar:lock-unlocked-bold'" width="14"></iconify-icon>
                   </button>
-                  <!-- Keycloak actions menu -->
-                  <div *ngIf="permissionService.isAdmin && user.keycloakId" class="relative">
+                  <!-- Keycloak actions menu (fixed so not clipped by table overflow) -->
+                  <div *ngIf="permissionService.isAdmin && user.keycloakId" class="relative inline-block">
                     <button
-                      (click)="toggleKcMenu(user.id)"
+                      #kcMenuTrigger
+                      (click)="toggleKcMenu(user.id, kcMenuTrigger)"
                       class="px-2 py-1 text-xs bg-zinc-700/50 text-zinc-300 rounded hover:bg-zinc-700 transition-colors"
                       title="Keycloak Actions">
                       <iconify-icon icon="solar:menu-dots-bold" width="14"></iconify-icon>
                     </button>
                     <div *ngIf="kcMenuOpen === user.id"
-                      class="absolute right-0 top-full mt-1 bg-zinc-800 border border-white/10 rounded-lg shadow-xl z-10 py-1 min-w-[160px]">
+                      class="fixed bg-zinc-800 border border-white/10 rounded-lg shadow-xl z-[100] py-1 min-w-[180px]"
+                      [style.top.px]="kcMenuPosition?.top"
+                      [style.left.px]="kcMenuPosition?.left">
                       <button (click)="forceTotp(user); kcMenuOpen = null"
                         class="w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/5 flex items-center gap-2">
                         <iconify-icon icon="solar:smartphone-bold" width="14"></iconify-icon>
@@ -271,6 +281,24 @@ import { PermissionService } from '../../core/services/permission.service';
         </div>
       </div>
 
+      <!-- Reset Password Confirmation Modal -->
+      <div *ngIf="resettingPasswordUser" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" (click)="resettingPasswordUser = null">
+        <div class="bg-zinc-900 border border-white/10 rounded-xl p-6 w-full max-w-sm" (click)="$event.stopPropagation()">
+          <h2 class="text-lg font-semibold text-white mb-2">Reset Password</h2>
+          <p class="text-sm text-zinc-400 mb-6">
+            Generate a new temporary password for <span class="text-zinc-200">{{ resettingPasswordUser.email }}</span>? The user will need to change it on next login. The current password will be invalidated.
+          </p>
+          <div class="flex gap-3 justify-end">
+            <button (click)="resettingPasswordUser = null" class="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors">
+              Cancel
+            </button>
+            <button (click)="resetPassword()" class="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-500 transition-colors">
+              Reset Password
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Role Editor Modal -->
       <div *ngIf="editingUser" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" (click)="closeRoleEditor()">
         <div class="bg-zinc-900 border border-white/10 rounded-xl p-6 w-full max-w-md" (click)="$event.stopPropagation()">
@@ -375,8 +403,12 @@ export class UsersAdminComponent implements OnInit {
   // Delete confirmation
   deletingUser: any = null;
 
-  // KC menu
+  // Reset password confirmation
+  resettingPasswordUser: any = null;
+
+  // KC menu (fixed position to avoid table overflow clipping)
   kcMenuOpen: string | null = null;
+  kcMenuPosition: { top: number; left: number } | null = null;
 
   // Merge
   mergeModalOpen = false;
@@ -555,7 +587,14 @@ export class UsersAdminComponent implements OnInit {
 
   // --- Keycloak Admin Actions ---
 
-  resetPassword(user: any): void {
+  confirmResetPassword(user: any): void {
+    this.resettingPasswordUser = user;
+  }
+
+  resetPassword(): void {
+    if (!this.resettingPasswordUser) return;
+    const user = this.resettingPasswordUser;
+    this.resettingPasswordUser = null;
     this.api.resetUserPassword(user.id).subscribe({
       next: (result) => {
         this.tempPasswordResult = result.temporaryPassword;
@@ -578,8 +617,29 @@ export class UsersAdminComponent implements OnInit {
     });
   }
 
-  toggleKcMenu(userId: string): void {
-    this.kcMenuOpen = this.kcMenuOpen === userId ? null : userId;
+  toggleKcMenu(userId: string, triggerEl?: HTMLElement): void {
+    if (this.kcMenuOpen === userId) {
+      this.kcMenuOpen = null;
+      this.kcMenuPosition = null;
+      return;
+    }
+    if (triggerEl) {
+      const rect = triggerEl.getBoundingClientRect();
+      const menuWidth = 180;
+      const menuHeight = 120;
+      const gap = 4;
+      const padding = 8;
+      let top = rect.bottom + gap;
+      if (top + menuHeight > window.innerHeight - padding) {
+        top = rect.top - menuHeight - gap;
+      }
+      let left = rect.right - menuWidth;
+      left = Math.max(padding, Math.min(left, window.innerWidth - menuWidth - padding));
+      this.kcMenuPosition = { top, left };
+    } else {
+      this.kcMenuPosition = null;
+    }
+    this.kcMenuOpen = userId;
   }
 
   forceTotp(user: any): void {
