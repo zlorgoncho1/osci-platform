@@ -6,6 +6,58 @@
   <title>OSCI Platform — Plateforme de pilotage de la sécurité Zero Trust</title>
   <meta name="description" content="Plateforme de pilotage de la sécurité Zero Trust. Centralisez vos contrôles, mesurez votre posture et pilotez la remédiation." />
 
+  <!-- Canonical & Favicon -->
+  <link rel="canonical" href="https://osci.smartdevafrica.com/" />
+  <link rel="icon" type="image/png" href="https://osci.smartdevafrica.com/logo-white.png" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="OSCI Platform — Plateforme de pilotage de la sécurité Zero Trust" />
+  <meta property="og:description" content="Plateforme de pilotage de la sécurité Zero Trust. Centralisez vos contrôles, mesurez votre posture et pilotez la remédiation." />
+  <meta property="og:image" content="https://osci.smartdevafrica.com/logo-white.png" />
+  <meta property="og:url" content="https://osci.smartdevafrica.com/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="OSCI Platform" />
+  <meta property="og:locale" content="fr_FR" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="OSCI Platform — Plateforme de pilotage de la sécurité Zero Trust" />
+  <meta name="twitter:description" content="Plateforme de pilotage de la sécurité Zero Trust. Centralisez vos contrôles, mesurez votre posture et pilotez la remédiation." />
+  <meta name="twitter:image" content="https://osci.smartdevafrica.com/logo-white.png" />
+  <meta name="twitter:site" content="@zlorgoncho1" />
+  <meta name="twitter:creator" content="@zlorgoncho1" />
+
+  <!-- Robots & Author -->
+  <meta name="robots" content="index, follow" />
+  <meta name="author" content="Smartdev Africa Hub" />
+
+  <!-- JSON-LD: WebSite -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "OSCI Platform",
+    "alternateName": "Open Security Checklist Idp",
+    "url": "https://osci.smartdevafrica.com/",
+    "description": "Plateforme de pilotage de la sécurité Zero Trust. Centralisez vos contrôles, mesurez votre posture et pilotez la remédiation.",
+    "inLanguage": "fr-FR",
+    "publisher": { "@id": "#organization" }
+  }
+  </script>
+
+  <!-- JSON-LD: Organization -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": "#organization",
+    "name": "Smartdev Africa Hub",
+    "url": "https://osci.smartdevafrica.com/",
+    "logo": "https://osci.smartdevafrica.com/logo-white.png",
+    "sameAs": ["https://github.com/zlorgoncho1/osci-platform"]
+  }
+  </script>
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -113,7 +165,7 @@
   <header id="site-header" class="hidden">
     <div class="header-inner">
       <a href="./" class="header-brand">
-        <img src="./logo-white.png" alt="OSCI" class="header-logo-img" />
+        <img src="/logo-white.png" alt="OSCI" class="header-logo-img" />
         <span class="header-title">OSCI Platform</span>
       </a>
       <nav class="header-nav">
@@ -131,7 +183,7 @@
     <!-- ── Fixed Left Sidebar (desktop) ── -->
     <nav id="side-nav" class="side-nav">
       <a href="./" class="flex items-center gap-2.5 px-2 mb-3">
-        <img src="./logo-white.png" alt="OSCI" class="h-5">
+        <img src="/logo-white.png" alt="OSCI" class="h-5">
         <span class="text-zinc-100 font-bold text-xs font-brand">OSCI Platform</span>
       </a>
 
@@ -169,7 +221,7 @@
     <!-- ── Mobile top bar (< 1024px) ── -->
     <nav id="mobile-bar" class="lg:hidden fixed top-0 w-full z-50 h-14 flex items-center justify-between px-5" style="background:rgba(10,10,10,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.06);">
       <div class="flex items-center gap-2.5">
-        <img src="./logo-white.png" alt="OSCI" class="h-5">
+        <img src="/logo-white.png" alt="OSCI" class="h-5">
         <span class="text-zinc-100 font-bold text-xs font-brand">OSCI Platform</span>
       </div>
       <button onclick="document.getElementById('side-nav').classList.toggle('open'); this.querySelector('.menu-open').classList.toggle('hidden'); this.querySelector('.menu-close').classList.toggle('hidden');"
@@ -675,19 +727,23 @@
             <div class="flex-1">
               <div class="rounded-xl overflow-hidden glass-card font-mono text-xs">
                 <div class="bg-zinc-900 px-4 py-2 border-b border-white/[0.06] text-[10px] text-zinc-500">referentiel.json</div>
-<pre class="p-5 text-zinc-300 leading-6" style="margin:0;background:transparent;overflow-x:auto;"><span class="text-zinc-500">{</span>
-  <span class="text-emerald-400">"code"</span>: <span class="text-amber-300">"ISO-27001"</span>,
-  <span class="text-emerald-400">"name"</span>: <span class="text-amber-300">"ISO 27001"</span>,
-  <span class="text-emerald-400">"version"</span>: <span class="text-amber-300">"1.0"</span>,
-  <span class="text-emerald-400">"controls"</span>: [
-    { <span class="text-emerald-400">"code"</span>: <span class="text-amber-300">"A.5.1"</span>,
-      <span class="text-emerald-400">"title"</span>: <span class="text-amber-300">"Politique de sécurité"</span> }
+<pre style="margin:0;padding:20px;background:transparent;overflow-x:auto;font-size:12px;line-height:1.5;color:#d4d4d8;font-family:'JetBrains Mono',monospace;"><span style="color:#71717a">{</span>
+  <span style="color:#34d399">"code"</span>: <span style="color:#fcd34d">"ISO-27001"</span>,
+  <span style="color:#34d399">"name"</span>: <span style="color:#fcd34d">"ISO 27001"</span>,
+  <span style="color:#34d399">"version"</span>: <span style="color:#fcd34d">"1.0"</span>,
+  <span style="color:#34d399">"controls"</span>: [
+    <span style="color:#71717a">{</span>
+      <span style="color:#34d399">"code"</span>: <span style="color:#fcd34d">"A.5.1"</span>,
+      <span style="color:#34d399">"title"</span>: <span style="color:#fcd34d">"Politique de sécurité"</span>
+    <span style="color:#71717a">}</span>
   ],
-  <span class="text-emerald-400">"checklists"</span>: [
-    { <span class="text-emerald-400">"title"</span>: <span class="text-amber-300">"Gouvernance"</span>,
-      <span class="text-emerald-400">"criticality"</span>: <span class="text-amber-300">"High"</span> }
+  <span style="color:#34d399">"checklists"</span>: [
+    <span style="color:#71717a">{</span>
+      <span style="color:#34d399">"title"</span>: <span style="color:#fcd34d">"Gouvernance"</span>,
+      <span style="color:#34d399">"criticality"</span>: <span style="color:#fcd34d">"High"</span>
+    <span style="color:#71717a">}</span>
   ]
-<span class="text-zinc-500">}</span></pre>
+<span style="color:#71717a">}</span></pre>
               </div>
             </div>
           </div>
@@ -829,7 +885,7 @@
           <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
             <div class="col-span-2 md:col-span-1">
               <div class="flex items-center gap-3 mb-4">
-                <img src="./logo-white.png" alt="OSCI Platform" class="h-8">
+                <img src="/logo-white.png" alt="OSCI Platform" class="h-8">
                 <span class="text-white font-semibold text-sm font-brand">OSCI Platform</span>
               </div>
               <p class="text-[10px] text-zinc-500 leading-relaxed">
