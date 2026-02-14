@@ -227,7 +227,7 @@ import { PermissionService } from '../../core/services/permission.service';
   `,
 })
 export class ObjectsListComponent implements OnInit {
-  objectTypes = ['Project', 'Human', 'Infrastructure', 'Codebase', 'Pipeline', 'Cluster', 'DataAsset', 'Tool', 'Network', 'AISystem', 'SystemTool', 'AgentTool', 'Server', 'Database'];
+  objectTypes = ['Project', 'Human', 'Infrastructure', 'Codebase', 'Pipeline', 'Cluster', 'DataAsset', 'Tool', 'Network', 'AISystem', 'SystemTool', 'AgentTool', 'Server', 'Database', 'Device', 'Application', 'Cloud', 'ThirdParty', 'Site', 'Domain', 'Storage', 'PhysicalAsset'];
   objects: any[] = [];
   filteredObjects: any[] = [];
   searchTerm = '';
