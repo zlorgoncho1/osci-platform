@@ -93,4 +93,4 @@ Le dépôt communautaire est ouvert aux contributions. Pour proposer un nouveau 
 
 Les types de référentiels supportés sont : `ISO`, `NIST`, `OWASP`, `SOC2`, `CIS` et `Internal`.
 
-Les domaines disponibles couvrent l'ensemble du périmètre sécurité : Governance, SecurityInfra, SecurityCode, SecurityDevOps, SecurityRepo, SecurityCluster, SecurityPipeline, SecurityNetworking, SecurityTooling, SecurityBackup, DisasterRecovery, SecurityHuman, SecurityData, et bien d'autres.
+Les domaines disponibles couvrent l'ensemble du périmètre sécurité : Governance, SecurityInfra, SecurityCode, SecurityDevOps, SecurityRepo, SecurityCluster, SecurityPipeline, SecurityNetworking, SecurityTooling, SecurityBackup, DisasterRecovery, SecurityHuman, SecurityData, SecurityPhysique, SecuritySocialEngineering, SecurityMalware, SecurityCrypto, RiskManagement, ThirdPartyVendor, AssetChangeManagement, Resilience, SecurityArchitecture, IAMManagement, VulnerabilityManagement, MaliciousActivityPrevention, Hardening, AlertingMonitoring, IncidentResponse, AutomationOrchestration, SecretsCredentials, FormationSecurity, Audit, Forensic, Cartographie, PasswordSecurity, PointSecurity, et d'autres.

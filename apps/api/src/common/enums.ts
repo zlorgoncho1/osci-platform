@@ -13,6 +13,14 @@ export enum ObjectType {
   AgentTool = 'AgentTool',
   Server = 'Server',
   Database = 'Database',
+  Device = 'Device',
+  Application = 'Application',
+  Cloud = 'Cloud',
+  ThirdParty = 'ThirdParty',
+  Site = 'Site',
+  Domain = 'Domain',
+  Storage = 'Storage',
+  PhysicalAsset = 'PhysicalAsset',
 }
 
 export enum ChecklistType {
@@ -47,6 +55,22 @@ export enum ChecklistDomain {
   Cartographie = 'Cartographie',
   PasswordSecurity = 'PasswordSecurity',
   PointSecurity = 'PointSecurity',
+  SecurityPhysique = 'SecurityPhysique',
+  SecuritySocialEngineering = 'SecuritySocialEngineering',
+  SecurityMalware = 'SecurityMalware',
+  SecurityCrypto = 'SecurityCrypto',
+  RiskManagement = 'RiskManagement',
+  ThirdPartyVendor = 'ThirdPartyVendor',
+  AssetChangeManagement = 'AssetChangeManagement',
+  Resilience = 'Resilience',
+  SecurityArchitecture = 'SecurityArchitecture',
+  IAMManagement = 'IAMManagement',
+  VulnerabilityManagement = 'VulnerabilityManagement',
+  MaliciousActivityPrevention = 'MaliciousActivityPrevention',
+  Hardening = 'Hardening',
+  AlertingMonitoring = 'AlertingMonitoring',
+  IncidentResponse = 'IncidentResponse',
+  AutomationOrchestration = 'AutomationOrchestration',
 }
 
 export enum ChecklistItemType {

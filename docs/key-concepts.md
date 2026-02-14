@@ -8,15 +8,26 @@ Un **objet** représente un élément de votre système d'information soumis à 
 
 - **Project** — Un projet applicatif ou organisationnel
 - **Human** — Une identité humaine (collaborateur, prestataire)
-- **Infrastructure** — Un composant d'infrastructure (serveur, réseau, cloud)
-- **Repository** — Un dépôt de code source
-- **Application** — Une application déployée
-- **Device** — Un équipement physique ou virtuel
-- **Data** — Un jeu de données ou une base de données
+- **Infrastructure** — Un composant d'infrastructure générique
+- **Codebase** — Un dépôt de code source
+- **Pipeline** — Un pipeline CI/CD
+- **Cluster** — Un cluster de conteneurs (Kubernetes, Docker Swarm)
+- **DataAsset** — Un jeu de données
+- **Tool** — Un outil logiciel (SaaS, on-premise)
 - **Network** — Un segment réseau
-- **Cloud** — Une ressource cloud (compte, subscription, VPC)
-- **Third Party** — Un prestataire ou service tiers
-- **Other** — Tout autre type d'élément
+- **AISystem** — Un système d'intelligence artificielle
+- **SystemTool** — Un outil système
+- **AgentTool** — Un outil d'agent automatisé
+- **Server** — Un serveur physique ou virtuel
+- **Database** — Une base de données
+- **Device** — Un équipement (poste de travail, BYOD, mobile)
+- **Application** — Une application déployée
+- **Cloud** — Un compte ou tenant cloud (AWS, Hetzner, IONOS, etc.)
+- **ThirdParty** — Un prestataire, fournisseur ou sous-traitant
+- **Site** — Un local physique ou datacenter
+- **Domain** — Un nom de domaine (DNS)
+- **Storage** — Un service de stockage (S3, serveur de fichiers, CDN)
+- **PhysicalAsset** — Un matériel inventorié (connecté ou non au réseau)
 
 Les objets peuvent être regroupés en **groupes d'objets** pour faciliter la gestion et appliquer des contrôles collectifs.
 

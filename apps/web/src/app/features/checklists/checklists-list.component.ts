@@ -361,8 +361,24 @@ export class ChecklistsListComponent implements OnInit {
     { value: 'Cartographie', label: 'Cartographie' },
     { value: 'PasswordSecurity', label: 'Password Security' },
     { value: 'PointSecurity', label: 'Point Security' },
+    { value: 'SecurityPhysique', label: 'Sécurité Physique' },
+    { value: 'SecuritySocialEngineering', label: 'Social Engineering' },
+    { value: 'SecurityMalware', label: 'Malware' },
+    { value: 'SecurityCrypto', label: 'Cryptographie' },
+    { value: 'RiskManagement', label: 'Risk Management' },
+    { value: 'ThirdPartyVendor', label: 'Third-Party / Vendor' },
+    { value: 'AssetChangeManagement', label: 'Asset & Change Management' },
+    { value: 'Resilience', label: 'Résilience' },
+    { value: 'SecurityArchitecture', label: 'Security Architecture' },
+    { value: 'IAMManagement', label: 'IAM Management' },
+    { value: 'VulnerabilityManagement', label: 'Vulnerability Management' },
+    { value: 'MaliciousActivityPrevention', label: 'Malicious Activity Prevention' },
+    { value: 'Hardening', label: 'Hardening' },
+    { value: 'AlertingMonitoring', label: 'Alerting & Monitoring' },
+    { value: 'IncidentResponse', label: 'Incident Response' },
+    { value: 'AutomationOrchestration', label: 'Automation & Orchestration' },
   ];
-  objectTypes = ['Project', 'Human', 'Infrastructure', 'Codebase', 'Pipeline', 'Cluster', 'DataAsset', 'Tool', 'Network', 'AISystem', 'SystemTool', 'AgentTool', 'Server', 'Database'];
+  objectTypes = ['Project', 'Human', 'Infrastructure', 'Codebase', 'Pipeline', 'Cluster', 'DataAsset', 'Tool', 'Network', 'AISystem', 'SystemTool', 'AgentTool', 'Server', 'Database', 'Device', 'Application', 'Cloud', 'ThirdParty', 'Site', 'Domain', 'Storage', 'PhysicalAsset'];
 
   checklists: any[] = [];
   filteredChecklists: any[] = [];
