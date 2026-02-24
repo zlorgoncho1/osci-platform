@@ -24,7 +24,7 @@ export class UpdateProjectDto {
   @IsEnum(ProjectStatus)
   status?: ProjectStatus;
 
-  @ApiPropertyOptional({ description: 'Owner user ID (Keycloak sub)' })
+  @ApiPropertyOptional({ description: 'Owner / Lead user ID (internal User UUID)' })
   @IsOptional()
   @IsString()
   ownerId?: string;

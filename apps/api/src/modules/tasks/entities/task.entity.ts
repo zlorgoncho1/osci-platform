@@ -34,6 +34,9 @@ export class Task {
   @Column({ type: 'varchar', nullable: true })
   assignedToId!: string | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  leadId!: string | null;
+
   @Column({ type: 'date', nullable: true })
   slaDue!: Date | null;
 

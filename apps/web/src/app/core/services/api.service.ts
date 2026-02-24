@@ -136,6 +136,17 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/projects/${id}/tasks`);
   }
 
+  // Project Concerned
+  getProjectConcerned(projectId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/projects/${projectId}/concerned`);
+  }
+  addProjectConcerned(projectId: string, userId: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/projects/${projectId}/concerned`, { userId });
+  }
+  removeProjectConcerned(projectId: string, userId: string): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/projects/${projectId}/concerned/${userId}`);
+  }
+
   // Milestones
   createMilestone(projectId: string, data: any): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/projects/${projectId}/milestones`, data);
@@ -145,6 +156,17 @@ export class ApiService {
   }
   deleteMilestone(projectId: string, milestoneId: string): Observable<any> {
     return this.http.delete<any>(`${this.baseUrl}/projects/${projectId}/milestones/${milestoneId}`);
+  }
+
+  // Task Concerned
+  getTaskConcerned(taskId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/tasks/${taskId}/concerned`);
+  }
+  addTaskConcerned(taskId: string, userId: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/tasks/${taskId}/concerned`, { userId });
+  }
+  removeTaskConcerned(taskId: string, userId: string): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/tasks/${taskId}/concerned/${userId}`);
   }
 
   // Task Comments

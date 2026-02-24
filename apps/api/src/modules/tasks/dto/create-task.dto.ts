@@ -29,10 +29,15 @@ export class CreateTaskDto {
   @IsEnum(Criticality)
   priority?: Criticality;
 
-  @ApiPropertyOptional({ description: 'Assigned user ID (Keycloak sub)' })
+  @ApiPropertyOptional({ description: 'Assigned user ID (internal User UUID)' })
   @IsOptional()
   @IsString()
   assignedToId?: string;
+
+  @ApiPropertyOptional({ description: 'Lead / responsible user ID (internal User UUID)' })
+  @IsOptional()
+  @IsString()
+  leadId?: string;
 
   @ApiPropertyOptional({ description: 'SLA due date (ISO format)' })
   @IsOptional()
