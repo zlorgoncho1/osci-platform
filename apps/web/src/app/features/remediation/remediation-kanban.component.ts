@@ -12,6 +12,7 @@ import {
 import { ApiService } from '../../core/services/api.service';
 import { ConfirmService } from '../../shared/components/confirm/confirm.service';
 import { PermissionService } from '../../core/services/permission.service';
+import { UserPickerComponent } from '../../shared/components/user-picker/user-picker.component';
 
 interface KanbanColumn {
   id: string;
@@ -28,12 +29,12 @@ interface IncidentColumn {
 @Component({
   selector: 'app-remediation-kanban',
   standalone: true,
-  imports: [CommonModule, RouterLink, CdkDrag, CdkDropList, FormsModule],
+  imports: [CommonModule, RouterLink, CdkDrag, CdkDropList, FormsModule, UserPickerComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div class="space-y-6">
       <!-- Header -->
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-brand font-bold text-white">Remediation Board</h1>
           <p class="text-xs text-zinc-500 mt-1">{{ activeTab === 'tasks' ? 'Drag tasks between columns to update status' : 'Drag incidents between columns to update status' }}
@@ -44,7 +45,15 @@ interface IncidentColumn {
             </a>
           </p>
         </div>
-        <div class="flex items-center gap-3" *ngIf="activeTab === 'tasks'">
+        <div class="flex items-center gap-3 flex-wrap" *ngIf="activeTab === 'tasks'">
+          <button (click)="toggleMyTasks()"
+            class="px-3 py-1.5 rounded-lg text-xs font-brand transition-colors flex items-center gap-1"
+            [ngClass]="showMyTasks
+              ? 'bg-white/10 border border-white/20 text-white'
+              : 'border border-white/10 text-zinc-400 hover:bg-white/5'">
+            <iconify-icon icon="solar:user-linear" width="12"></iconify-icon>
+            My Tasks
+          </button>
           <select [(ngModel)]="selectedProjectId" (ngModelChange)="onFilterChange()"
             class="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-white/20">
             <option value="">All Projects</option>
@@ -167,7 +176,7 @@ interface IncidentColumn {
                   <div class="w-5 h-5 rounded bg-zinc-800 flex items-center justify-center">
                     <iconify-icon icon="solar:user-linear" width="10" class="text-zinc-500"></iconify-icon>
                   </div>
-                  <span class="text-[10px] text-zinc-500">{{ task.assignedToId || 'Unassigned' }}</span>
+                  <span class="text-[10px] text-zinc-500">{{ formatUser(task.assignedTo) }}</span>
                 </div>
                 <span *ngIf="task.slaDue" class="text-[10px] font-mono"
                   [ngClass]="isOverdue(task.slaDue) ? 'text-rose-500' : 'text-zinc-600'">
@@ -282,6 +291,16 @@ interface IncidentColumn {
                 <option *ngFor="let p of projects" [value]="p.id">{{ p.name }}</option>
               </select>
             </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-[10px] uppercase tracking-wider text-zinc-500 mb-1 block">Assignee</label>
+                <app-user-picker [value]="newTask.assignedToId" (valueChange)="newTask.assignedToId = $event" placeholder="Select assignee..."></app-user-picker>
+              </div>
+              <div>
+                <label class="text-[10px] uppercase tracking-wider text-zinc-500 mb-1 block">Lead</label>
+                <app-user-picker [value]="newTask.leadId" (valueChange)="newTask.leadId = $event" placeholder="Select lead..."></app-user-picker>
+              </div>
+            </div>
           </div>
           <div class="flex justify-end gap-3 pt-2">
             <button (click)="showCreateForm = false"
@@ -296,11 +315,11 @@ interface IncidentColumn {
       <div *ngIf="selectedTask" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center" (click)="closeTaskDetail()">
         <div class="glass-panel p-6 w-full max-w-2xl space-y-5 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
           <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <h2 class="text-lg font-brand font-bold text-white" *ngIf="!editingTask">{{ selectedTask.title }}</h2>
+            <div class="flex items-center gap-3 min-w-0">
+              <h2 class="text-lg font-brand font-bold text-white truncate" *ngIf="!editingTask">{{ selectedTask.title }}</h2>
               <input *ngIf="editingTask" [(ngModel)]="taskEditData.title" type="text"
                 class="text-lg font-brand font-bold text-white bg-transparent border-b border-white/20 focus:outline-none flex-1 min-w-0" />
-              <span class="px-2 py-0.5 rounded text-[10px] font-medium"
+              <span class="px-2 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
                 [ngClass]="{
                   'bg-zinc-500/10 text-zinc-400': selectedTask.status === 'ToDo',
                   'bg-blue-500/10 text-blue-500': selectedTask.status === 'InProgress',
@@ -308,7 +327,7 @@ interface IncidentColumn {
                   'bg-emerald-500/10 text-emerald-500': selectedTask.status === 'Done'
                 }">{{ selectedTask.status }}</span>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-shrink-0">
               <button *ngIf="!editingTask && perm.canGlobal('task', 'update')" (click)="startEditTask()"
                 class="p-1.5 rounded hover:bg-white/5 transition-colors">
                 <iconify-icon icon="solar:pen-linear" width="16" class="text-zinc-500"></iconify-icon>
@@ -365,12 +384,19 @@ interface IncidentColumn {
             </div>
             <div *ngIf="!editingTask">
               <p class="text-[10px] text-zinc-600 mb-0.5">Assignee</p>
-              <p class="text-sm text-zinc-300">{{ selectedTask.assignedToId || 'Unassigned' }}</p>
+              <p class="text-sm text-zinc-300">{{ formatUser(selectedTask.assignedTo) }}</p>
             </div>
             <div *ngIf="editingTask">
               <label class="text-[10px] text-zinc-600 mb-0.5 block">Assignee</label>
-              <input type="text" [(ngModel)]="taskEditData.assignedToId" placeholder="User ID"
-                class="w-full bg-zinc-900 border border-white/10 rounded-lg px-2 py-1 text-xs text-zinc-300 focus:outline-none" />
+              <app-user-picker [value]="taskEditData.assignedToId" (valueChange)="taskEditData.assignedToId = $event" placeholder="Select assignee..."></app-user-picker>
+            </div>
+            <div *ngIf="!editingTask">
+              <p class="text-[10px] text-zinc-600 mb-0.5">Lead</p>
+              <p class="text-sm text-zinc-300">{{ formatUser(selectedTask.lead) }}</p>
+            </div>
+            <div *ngIf="editingTask">
+              <label class="text-[10px] text-zinc-600 mb-0.5 block">Lead</label>
+              <app-user-picker [value]="taskEditData.leadId" (valueChange)="taskEditData.leadId = $event" placeholder="Select lead..."></app-user-picker>
             </div>
             <div *ngIf="!editingTask">
               <p class="text-[10px] text-zinc-600 mb-0.5">Due Date</p>
@@ -410,13 +436,51 @@ interface IncidentColumn {
             </div>
           </div>
 
+          <!-- Concerned section -->
+          <div class="border-t border-white/5 pt-4">
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-[10px] uppercase tracking-wider text-zinc-500">Concerned ({{ taskConcerned.length }})</p>
+              <button *ngIf="perm.canGlobal('task', 'update') && !showTaskConcernedPicker" (click)="showTaskConcernedPicker = true"
+                class="px-2 py-0.5 rounded text-[10px] text-zinc-400 border border-white/10 hover:bg-white/5 transition-colors flex items-center gap-1">
+                <iconify-icon icon="solar:add-circle-linear" width="10"></iconify-icon>Add
+              </button>
+            </div>
+            <div *ngIf="showTaskConcernedPicker" class="mb-3 p-2 rounded-lg border border-white/10 bg-white/[0.02] space-y-2">
+              <div class="max-w-xs">
+                <app-user-picker [value]="newTaskConcernedUserId" (valueChange)="newTaskConcernedUserId = $event" placeholder="Select a person..."></app-user-picker>
+              </div>
+              <div class="flex justify-end gap-2">
+                <button (click)="showTaskConcernedPicker = false; newTaskConcernedUserId = null" class="px-2 py-0.5 rounded text-[10px] text-zinc-500 hover:text-zinc-300">Cancel</button>
+                <button (click)="addTaskConcerned()" [disabled]="!newTaskConcernedUserId"
+                  class="px-2 py-0.5 rounded bg-white text-black text-[10px] font-semibold hover:bg-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed">Add</button>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div *ngFor="let c of taskConcerned"
+                class="flex items-center justify-between p-1.5 rounded-lg border border-white/5 bg-white/[0.01]">
+                <div class="flex items-center gap-2">
+                  <div class="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center">
+                    <iconify-icon icon="solar:user-linear" width="10" class="text-zinc-500"></iconify-icon>
+                  </div>
+                  <span class="text-[11px] text-zinc-300">{{ c.firstName || '' }} {{ c.lastName || '' }}</span>
+                  <span class="text-[10px] text-zinc-600">{{ c.email }}</span>
+                </div>
+                <button *ngIf="perm.canGlobal('task', 'update')" (click)="removeTaskConcerned(c.id)"
+                  class="p-0.5 rounded hover:bg-white/5 transition-colors">
+                  <iconify-icon icon="solar:close-circle-linear" width="12" class="text-zinc-600 hover:text-rose-500"></iconify-icon>
+                </button>
+              </div>
+              <p *ngIf="taskConcerned.length === 0" class="text-[10px] text-zinc-600 text-center py-2">No concerned people</p>
+            </div>
+          </div>
+
           <!-- Comments section -->
           <div class="border-t border-white/5 pt-4">
             <p class="text-[10px] uppercase tracking-wider text-zinc-500 mb-3">Comments ({{ taskComments.length }})</p>
             <div class="space-y-3 max-h-48 overflow-y-auto mb-3">
               <div *ngFor="let c of taskComments" class="p-3 bg-white/[0.02] rounded-lg border border-white/5">
                 <div class="flex items-center justify-between mb-1">
-                  <span class="text-[10px] text-zinc-500">{{ c.authorId || 'System' }}</span>
+                  <span class="text-[10px] text-zinc-500">{{ c.authorName || c.authorId || 'System' }}</span>
                   <div class="flex items-center gap-2">
                     <span class="text-[10px] text-zinc-600 font-mono">{{ c.createdAt | date:'yyyy-MM-dd HH:mm' }}</span>
                     <button *ngIf="perm.canGlobal('task', 'update')" (click)="deleteComment(c.id)" class="p-0.5 rounded hover:bg-white/5">
@@ -441,7 +505,7 @@ interface IncidentColumn {
           </div>
 
           <!-- Metadata -->
-          <div class="flex items-center gap-4 text-[10px] text-zinc-600 border-t border-white/5 pt-3">
+          <div class="flex items-center gap-4 text-[10px] text-zinc-600 border-t border-white/5 pt-3 flex-wrap">
             <span>Created: {{ selectedTask.createdAt | date:'yyyy-MM-dd HH:mm' }}</span>
             <span>Updated: {{ selectedTask.updatedAt | date:'yyyy-MM-dd HH:mm' }}</span>
             <span class="font-mono">{{ selectedTask.id }}</span>
@@ -478,21 +542,30 @@ export class RemediationKanbanComponent implements OnInit {
   selectedObjectId = '';
   selectedChecklistId = '';
   selectedObjectGroupId = '';
+  showMyTasks = false;
+  currentUserId: string | null = null;
 
   // Task detail
   selectedTask: any = null;
   editingTask = false;
   taskEditData: any = {};
   taskComments: any[] = [];
+  taskConcerned: any[] = [];
   newComment = '';
+  showTaskConcernedPicker = false;
+  newTaskConcernedUserId: string | null = null;
 
   // Create task
   showCreateForm = false;
-  newTask: any = { title: '', description: '', priority: 'Medium', slaDue: '', projectId: '' };
+  newTask: any = { title: '', description: '', priority: 'Medium', slaDue: '', projectId: '', assignedToId: null, leadId: null };
 
   constructor(private api: ApiService, private confirmService: ConfirmService, public perm: PermissionService) {}
 
   ngOnInit(): void {
+    this.api.getAuthMe().subscribe({
+      next: (me) => { this.currentUserId = me?.userId || me?.id || null; },
+      error: () => {},
+    });
     this.loadProjects();
     this.loadObjects();
     this.loadChecklists();
@@ -539,12 +612,19 @@ export class RemediationKanbanComponent implements OnInit {
     this.loadTasks();
   }
 
+  toggleMyTasks(): void {
+    this.showMyTasks = !this.showMyTasks;
+    this.loadTasks();
+  }
+
   loadTasks(): void {
     const params: any = {};
     if (this.selectedProjectId) params.projectId = this.selectedProjectId;
     if (this.selectedObjectId) params.objectId = this.selectedObjectId;
     if (this.selectedChecklistId) params.checklistId = this.selectedChecklistId;
     if (this.selectedObjectGroupId) params.objectGroupId = this.selectedObjectGroupId;
+    if (this.showMyTasks && this.currentUserId) params.concernedUserId = this.currentUserId;
+
     this.api.getTasks(params).subscribe({
       next: (tasks) => {
         const all = tasks || [];
@@ -659,18 +739,23 @@ export class RemediationKanbanComponent implements OnInit {
     return new Date(dueDate) < new Date();
   }
 
-  // Task Detail
+  // --- Task Detail ---
+
   openTaskDetail(task: any): void {
     this.selectedTask = task;
     this.editingTask = false;
     this.newComment = '';
+    this.showTaskConcernedPicker = false;
+    this.newTaskConcernedUserId = null;
     this.loadTaskComments(task.id);
+    this.loadTaskConcerned(task.id);
   }
 
   closeTaskDetail(): void {
     this.selectedTask = null;
     this.editingTask = false;
     this.taskComments = [];
+    this.taskConcerned = [];
   }
 
   startEditTask(): void {
@@ -679,7 +764,8 @@ export class RemediationKanbanComponent implements OnInit {
       description: this.selectedTask.description || '',
       priority: this.selectedTask.priority,
       status: this.selectedTask.status,
-      assignedToId: this.selectedTask.assignedToId || '',
+      assignedToId: this.selectedTask.assignedToId || null,
+      leadId: this.selectedTask.leadId || null,
       slaDue: this.selectedTask.slaDue ? new Date(this.selectedTask.slaDue).toISOString().split('T')[0] : '',
     };
     this.editingTask = true;
@@ -691,8 +777,10 @@ export class RemediationKanbanComponent implements OnInit {
     if (this.taskEditData.description !== (this.selectedTask.description || '')) payload.description = this.taskEditData.description;
     if (this.taskEditData.priority !== this.selectedTask.priority) payload.priority = this.taskEditData.priority;
     if (this.taskEditData.status !== this.selectedTask.status) payload.status = this.taskEditData.status;
-    if (this.taskEditData.assignedToId !== (this.selectedTask.assignedToId || '')) payload.assignedToId = this.taskEditData.assignedToId || null;
-    if (this.taskEditData.slaDue) payload.slaDue = this.taskEditData.slaDue;
+    if (this.taskEditData.assignedToId !== (this.selectedTask.assignedToId || null)) payload.assignedToId = this.taskEditData.assignedToId || null;
+    if (this.taskEditData.leadId !== (this.selectedTask.leadId || null)) payload.leadId = this.taskEditData.leadId || null;
+    const origSlaDue = this.selectedTask.slaDue ? new Date(this.selectedTask.slaDue).toISOString().split('T')[0] : '';
+    if (this.taskEditData.slaDue !== origSlaDue) payload.slaDue = this.taskEditData.slaDue || null;
 
     this.api.updateTask(this.selectedTask.id, payload).subscribe({
       next: (updated) => {
@@ -721,7 +809,35 @@ export class RemediationKanbanComponent implements OnInit {
     });
   }
 
-  // Comments
+  // --- Task Concerned ---
+
+  loadTaskConcerned(taskId: string): void {
+    this.api.getTaskConcerned(taskId).subscribe({
+      next: (data) => { this.taskConcerned = data || []; },
+      error: () => { this.taskConcerned = []; },
+    });
+  }
+
+  addTaskConcerned(): void {
+    if (!this.newTaskConcernedUserId || !this.selectedTask) return;
+    this.api.addTaskConcerned(this.selectedTask.id, this.newTaskConcernedUserId).subscribe({
+      next: () => {
+        this.showTaskConcernedPicker = false;
+        this.newTaskConcernedUserId = null;
+        this.loadTaskConcerned(this.selectedTask.id);
+      },
+    });
+  }
+
+  removeTaskConcerned(userId: string): void {
+    if (!this.selectedTask) return;
+    this.api.removeTaskConcerned(this.selectedTask.id, userId).subscribe({
+      next: () => this.loadTaskConcerned(this.selectedTask.id),
+    });
+  }
+
+  // --- Comments ---
+
   loadTaskComments(taskId: string): void {
     this.api.getTaskComments(taskId).subscribe({
       next: (data) => { this.taskComments = data || []; },
@@ -748,7 +864,8 @@ export class RemediationKanbanComponent implements OnInit {
     });
   }
 
-  // Create Task
+  // --- Create Task ---
+
   createTask(): void {
     if (!this.newTask.title?.trim()) return;
     const payload: any = {
@@ -758,14 +875,24 @@ export class RemediationKanbanComponent implements OnInit {
     if (this.newTask.description?.trim()) payload.description = this.newTask.description;
     if (this.newTask.slaDue) payload.slaDue = this.newTask.slaDue;
     if (this.newTask.projectId) payload.projectId = this.newTask.projectId;
+    if (this.newTask.assignedToId) payload.assignedToId = this.newTask.assignedToId;
+    if (this.newTask.leadId) payload.leadId = this.newTask.leadId;
 
     this.api.createTask(payload).subscribe({
       next: () => {
         this.showCreateForm = false;
-        this.newTask = { title: '', description: '', priority: 'Medium', slaDue: '', projectId: '' };
+        this.newTask = { title: '', description: '', priority: 'Medium', slaDue: '', projectId: '', assignedToId: null, leadId: null };
         this.loadTasks();
       },
       error: (err) => console.error('[OSCI] Failed to create task:', err),
     });
+  }
+
+  // --- Helpers ---
+
+  formatUser(user: any): string {
+    if (!user) return 'Unassigned';
+    const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
+    return name || user.email || 'Unknown';
   }
 }

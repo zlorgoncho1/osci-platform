@@ -19,7 +19,6 @@ import { TaskCommentsService, CreateTaskCommentDto } from './task-comments.servi
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { TaskStatus } from '../../common/enums';
-import { Task } from './entities/task.entity';
 
 @ApiTags('tasks')
 @ApiBearerAuth()
@@ -39,6 +38,7 @@ export class TasksController {
   @ApiQuery({ name: 'parentTaskId', required: false })
   @ApiQuery({ name: 'checklistId', required: false })
   @ApiQuery({ name: 'objectGroupId', required: false })
+  @ApiQuery({ name: 'concernedUserId', required: false, description: 'Filter tasks where user is assignee, lead, or concerned' })
   async findAll(
     @Query('status') status?: TaskStatus,
     @Query('assignedToId') assignedToId?: string,
@@ -47,17 +47,20 @@ export class TasksController {
     @Query('parentTaskId') parentTaskId?: string,
     @Query('checklistId') checklistId?: string,
     @Query('objectGroupId') objectGroupId?: string,
-  ): Promise<Task[]> {
-    return this.tasksService.findAll({ status, assignedToId, objectId, projectId, parentTaskId, checklistId, objectGroupId });
+    @Query('concernedUserId') concernedUserId?: string,
+  ) {
+    return this.tasksService.findAll({
+      status, assignedToId, objectId, projectId, parentTaskId, checklistId, objectGroupId, concernedUserId,
+    });
   }
 
   @Post()
-  async create(@Body() dto: CreateTaskDto): Promise<Task> {
+  async create(@Body() dto: CreateTaskDto) {
     return this.tasksService.create(dto);
   }
 
   @Get(':id')
-  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Task> {
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.tasksService.findOne(id);
   }
 
@@ -65,7 +68,7 @@ export class TasksController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateTaskDto,
-  ): Promise<Task> {
+  ) {
     return this.tasksService.update(id, dto);
   }
 
@@ -74,7 +77,33 @@ export class TasksController {
     return this.tasksService.remove(id);
   }
 
-  // Comments
+  // --- Concerned ---
+
+  @Get(':id/concerned')
+  async getConcerned(@Param('id', ParseUUIDPipe) id: string) {
+    return this.tasksService.getConcerned(id);
+  }
+
+  @Post(':id/concerned')
+  async addConcerned(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { userId?: string; userIds?: string[] },
+  ) {
+    const raw = body.userIds || (body.userId ? [body.userId] : []);
+    const ids = raw.filter((v): v is string => typeof v === 'string' && v.length > 0);
+    if (ids.length === 0) return [];
+    return this.tasksService.addConcerned(id, ids);
+  }
+
+  @Delete(':id/concerned/:userId')
+  async removeConcerned(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ) {
+    return this.tasksService.removeConcerned(id, userId);
+  }
+
+  // --- Comments ---
 
   @Get(':id/comments')
   async getComments(@Param('id', ParseUUIDPipe) id: string) {
@@ -85,16 +114,16 @@ export class TasksController {
   async createComment(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreateTaskCommentDto,
-    @CurrentUser() user: { sub: string; firstName?: string; lastName?: string; email?: string },
+    @CurrentUser() user: { userId: string; firstName?: string; lastName?: string; email?: string },
   ) {
     const authorName =
       [user?.firstName, user?.lastName].filter(Boolean).join(' ') ||
       user?.email ||
-      user?.sub ||
+      user?.userId ||
       'Unknown';
     return this.commentsService.create(id, {
       content: dto.content,
-      authorId: user?.sub ?? 'anonymous',
+      authorId: user?.userId ?? 'anonymous',
       authorName,
     });
   }

@@ -473,6 +473,34 @@ export class UsersService {
         [keepId, removeId],
       );
 
+      // Transfer project_concerned (skip duplicates)
+      await qr.query(
+        `UPDATE project_concerned SET "userId" = $1
+         WHERE "userId" = $2
+         AND "projectId" NOT IN (
+           SELECT "projectId" FROM project_concerned WHERE "userId" = $1
+         )`,
+        [keepId, removeId],
+      );
+      await qr.query(
+        `DELETE FROM project_concerned WHERE "userId" = $1`,
+        [removeId],
+      );
+
+      // Transfer task_concerned (skip duplicates)
+      await qr.query(
+        `UPDATE task_concerned SET "userId" = $1
+         WHERE "userId" = $2
+         AND "taskId" NOT IN (
+           SELECT "taskId" FROM task_concerned WHERE "userId" = $1
+         )`,
+        [keepId, removeId],
+      );
+      await qr.query(
+        `DELETE FROM task_concerned WHERE "userId" = $1`,
+        [removeId],
+      );
+
       // Transfer plain FK columns
       const fkUpdates = [
         ['objects', 'createdById'],
@@ -481,6 +509,7 @@ export class UsersService {
         ['security_projects', 'createdById'],
         ['security_projects', 'ownerId'],
         ['tasks', 'assignedToId'],
+        ['tasks', 'leadId'],
         ['resource_access', 'grantedById'],
         ['user_permissions', 'grantedById'],
         ['user_role_assignments', 'createdById'],

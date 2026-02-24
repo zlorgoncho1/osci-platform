@@ -1,5 +1,6 @@
 import {
   IsString,
+  IsNotEmpty,
   IsEnum,
   IsOptional,
   IsUUID,
@@ -23,8 +24,9 @@ export class CreateProjectDto {
   @IsEnum(ProjectStatus)
   status?: ProjectStatus;
 
-  @ApiProperty({ description: 'Owner user ID (Keycloak sub)' })
+  @ApiProperty({ description: 'Owner / Lead user ID (internal User UUID)' })
   @IsString()
+  @IsNotEmpty()
   ownerId!: string;
 
   @ApiPropertyOptional({ description: 'Start date (ISO format)' })
