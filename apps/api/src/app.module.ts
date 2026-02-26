@@ -32,13 +32,18 @@ import { GlobalHttpExceptionFilter } from './common/filters/http-exception.filte
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres' as const,
-        url: configService.get<string>('DATABASE_URL'),
-        autoLoadEntities: true,
-        synchronize: true,
-        logging: false,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const logLevel = (configService.get<string>('LOG_LEVEL') || '').toLowerCase();
+        const enableTypeOrmLogging =
+          logLevel.includes('debug') || logLevel.includes('verbose');
+        return {
+          type: 'postgres' as const,
+          url: configService.get<string>('DATABASE_URL'),
+          autoLoadEntities: true,
+          synchronize: true,
+          logging: enableTypeOrmLogging,
+        };
+      },
     }),
     ThrottlerModule.forRoot({
       throttlers: [{ ttl: 60000, limit: 200 }],

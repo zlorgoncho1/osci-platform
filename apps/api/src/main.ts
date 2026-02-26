@@ -1,12 +1,14 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { getNestLoggerLevels } from './common/logger.config';
+import { requestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 
 async function bootstrap() {
-  const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+  const logLevels = getNestLoggerLevels();
+  const app = await NestFactory.create(AppModule, { logger: logLevels });
 
   app.use(helmet());
 
@@ -37,6 +39,7 @@ async function bootstrap() {
   if (process.env.TRUST_PROXY === '1' || process.env.TRUST_PROXY === 'true') {
     expressApp.set('trust proxy', 1);
   }
+  expressApp.use(requestLoggerMiddleware);
 
   // Health endpoint for Docker healthcheck
   expressApp.get('/health', (_req: any, res: any) => {
@@ -45,7 +48,8 @@ async function bootstrap() {
 
   const port = process.env.API_PORT || 3000;
   await app.listen(port);
-  logger.log(`OSCI API is running on port ${port}`);
+  // Always visible regardless of LOG_LEVEL so startup is clear in logs
+  console.log(`OSCI API is running on port ${port}`);
 }
 
 bootstrap();
