@@ -84,6 +84,9 @@ export class ApiService {
   deleteChecklistItem(checklistId: string, itemId: string): Observable<any> {
     return this.http.delete<any>(`${this.baseUrl}/checklists/${checklistId}/items/${itemId}`);
   }
+  syncChecklistItems(checklistId: string, body: { deletions: string[]; items: any[] }): Observable<any> {
+    return this.http.patch<any>(`${this.baseUrl}/checklists/${checklistId}/items/sync`, body);
+  }
 
   // Scores
   getObjectScore(objectId: string): Observable<any> {
@@ -330,6 +333,9 @@ export class ApiService {
   }
   getMappedChecklistItems(referentielId: string, controlId: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/referentiels/${referentielId}/controls/${controlId}/mapped-items`);
+  }
+  getReferentielMappedCounts(referentielId: string): Observable<Record<string, number>> {
+    return this.http.get<Record<string, number>>(`${this.baseUrl}/referentiels/${referentielId}/controls/mapped-counts`);
   }
   importReferentielFromChecklist(referentielId: string, checklistId: string): Observable<{ imported: number }> {
     return this.http.post<any>(`${this.baseUrl}/referentiels/${referentielId}/import-from-checklist`, { checklistId });

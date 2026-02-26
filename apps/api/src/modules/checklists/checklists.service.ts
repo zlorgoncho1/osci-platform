@@ -56,9 +56,9 @@ export class ChecklistsService {
 
     if (accessibleIds !== 'all') {
       if (accessibleIds.length === 0) {
-        qb.andWhere('c.createdById = :userId', { userId });
+        qb.andWhere('c."createdById" = :userId::uuid', { userId });
       } else {
-        qb.andWhere('(c.id IN (:...accessibleIds) OR c.createdById = :userId)', {
+        qb.andWhere('(c.id IN (:...accessibleIds) OR c."createdById" = :userId::uuid)', {
           accessibleIds,
           userId,
         });
@@ -240,8 +240,8 @@ export class ChecklistsService {
         const relatedRunItems = await this.checklistRunItemRepository
           .createQueryBuilder('ri')
           .innerJoin('ri.checklistRun', 'cr')
-          .where('cr.objectId = :objectId', { objectId: run.objectId })
-          .andWhere('ri.checklistItemId = :checklistItemId', {
+          .where('cr."objectId" = :objectId::uuid', { objectId: run.objectId })
+          .andWhere('ri."checklistItemId" = :checklistItemId::uuid', {
             checklistItemId: runItem.checklistItemId,
           })
           .select('ri.id')
@@ -465,6 +465,80 @@ export class ChecklistsService {
       );
     }
     await this.checklistItemRepository.remove(item);
+  }
+
+  async syncItems(
+    checklistId: string,
+    body: { deletions: string[]; items: Array<{ id?: string; question: string; itemType?: string; weight?: number; frameworkControlId?: string | null; referenceType?: string | null; reference?: string | null; orderIndex?: number; expectedEvidence?: string | null; autoTaskTitle?: string | null }> },
+  ): Promise<{ updated: number; created: number; deleted: number }> {
+    await this.findOne(checklistId);
+
+    return this.checklistItemRepository.manager.transaction(async (em) => {
+      const itemRepo = em.getRepository(ChecklistItem);
+      let deleted = 0;
+      let updated = 0;
+      let created = 0;
+
+      // Batch deletions (filter to valid UUIDs to prevent malformed queries)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const safeDeletions = (body.deletions || []).filter((id) => uuidRegex.test(id));
+      if (safeDeletions.length > 0) {
+        const itemsToDelete = await itemRepo.find({
+          where: { checklistId, id: In(safeDeletions) },
+        });
+        if (itemsToDelete.length > 0) {
+          await itemRepo.remove(itemsToDelete);
+          deleted = itemsToDelete.length;
+        }
+      }
+
+      // Batch upserts
+      for (const itemDto of (body.items || [])) {
+        const { referenceType, reference } = await this.resolveReferenceFromControl(
+          itemDto.frameworkControlId || undefined,
+          (itemDto.referenceType as any) || undefined,
+          itemDto.reference || undefined,
+        );
+
+        if (itemDto.id) {
+          // Update existing
+          const existing = await itemRepo.findOne({
+            where: { id: itemDto.id, checklistId },
+          });
+          if (existing) {
+            if (itemDto.question !== undefined) existing.question = itemDto.question;
+            if (itemDto.itemType !== undefined) existing.itemType = itemDto.itemType as any;
+            if (itemDto.weight !== undefined) existing.weight = itemDto.weight;
+            if (itemDto.orderIndex !== undefined) existing.orderIndex = itemDto.orderIndex;
+            if (itemDto.expectedEvidence !== undefined) existing.expectedEvidence = itemDto.expectedEvidence || null;
+            if (itemDto.autoTaskTitle !== undefined) existing.autoTaskTitle = itemDto.autoTaskTitle || null;
+            existing.frameworkControlId = itemDto.frameworkControlId || null;
+            existing.referenceType = referenceType;
+            existing.reference = reference;
+            await itemRepo.save(existing);
+            updated++;
+          }
+        } else {
+          // Create new
+          const newItem = itemRepo.create({
+            checklistId,
+            question: itemDto.question,
+            itemType: (itemDto.itemType as any) || 'YesNo',
+            weight: itemDto.weight ?? 1.0,
+            expectedEvidence: itemDto.expectedEvidence || null,
+            referenceType,
+            reference,
+            frameworkControlId: itemDto.frameworkControlId || null,
+            orderIndex: itemDto.orderIndex ?? 0,
+            autoTaskTitle: itemDto.autoTaskTitle || null,
+          });
+          await itemRepo.save(newItem);
+          created++;
+        }
+      }
+
+      return { updated, created, deleted };
+    });
   }
 
   async detachObject(checklistId: string, objectId: string): Promise<{ deleted: number }> {

@@ -41,7 +41,7 @@ import { GlobalHttpExceptionFilter } from './common/filters/http-exception.filte
       }),
     }),
     ThrottlerModule.forRoot({
-      throttlers: [{ ttl: 60000, limit: 100 }],
+      throttlers: [{ ttl: 60000, limit: 200 }],
     }),
     KeycloakAdminModule,
     RbacModule,

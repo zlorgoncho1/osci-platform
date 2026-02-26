@@ -1,7 +1,9 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 import { ApiService } from '../../core/services/api.service';
 import { PermissionService } from '../../core/services/permission.service';
 
@@ -89,7 +91,7 @@ const DOMAINS = [
       <div class="glass-panel p-4 flex items-center gap-4">
         <div class="relative flex-1 min-w-[200px]">
           <iconify-icon icon="solar:magnifer-linear" width="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600"></iconify-icon>
-          <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="loadReferentiels()" placeholder="Search referentiels..."
+          <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()" placeholder="Search referentiels..."
             class="w-full bg-zinc-900 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-xs text-zinc-300 placeholder-zinc-600 focus:border-white/20 focus:outline-none transition-colors" />
         </div>
         <select [(ngModel)]="filterType" (ngModelChange)="loadReferentiels()"
@@ -314,7 +316,7 @@ const DOMAINS = [
     </div>
   `,
 })
-export class ReferentielsListComponent implements OnInit {
+export class ReferentielsListComponent implements OnInit, OnDestroy {
   referentiels: any[] = [];
   referentielTypes = REFERENTIEL_TYPES;
   domains = DOMAINS;
@@ -324,6 +326,10 @@ export class ReferentielsListComponent implements OnInit {
   showCreateModal = false;
   referentielStats: Record<string, { totalControls: number; mappedControls: number; coveragePercent: number }> = {};
   newRef = { code: '', name: '', type: 'ISO', version: '1.0', domain: '', description: '' };
+
+  // Debounce
+  private searchSubject = new Subject<void>();
+  private searchSub!: Subscription;
 
   // Community
   showCommunityModal = false;
@@ -337,7 +343,18 @@ export class ReferentielsListComponent implements OnInit {
   constructor(private api: ApiService, private router: Router, public perm: PermissionService) {}
 
   ngOnInit(): void {
+    this.searchSub = this.searchSubject.pipe(debounceTime(350)).subscribe(() => {
+      this.loadReferentiels();
+    });
     this.loadReferentiels();
+  }
+
+  ngOnDestroy(): void {
+    this.searchSub?.unsubscribe();
+  }
+
+  onSearchChange(): void {
+    this.searchSubject.next();
   }
 
   loadReferentiels(): void {
@@ -349,19 +366,18 @@ export class ReferentielsListComponent implements OnInit {
     this.api.getReferentiels(params).subscribe({
       next: (res) => {
         this.referentiels = res.data || res || [];
-        this.referentiels.forEach((ref) => this.loadStats(ref.id));
+        // Stats are now included in the API response
+        for (const ref of this.referentiels) {
+          if (ref.stats) {
+            this.referentielStats[ref.id] = ref.stats;
+          }
+        }
         this.loading = false;
       },
       error: () => {
         this.referentiels = [];
         this.loading = false;
       },
-    });
-  }
-
-  loadStats(id: string): void {
-    this.api.getReferentielStats(id).subscribe({
-      next: (stats) => this.referentielStats[id] = stats,
     });
   }
 

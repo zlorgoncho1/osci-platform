@@ -77,9 +77,9 @@ export class ProjectsService {
 
     if (accessibleIds !== 'all') {
       if (accessibleIds.length === 0) {
-        qb.where('p.createdById = :userId', { userId });
+        qb.where('p."createdById" = :userId::uuid', { userId });
       } else {
-        qb.where('(p.id IN (:...accessibleIds) OR p.createdById = :userId)', {
+        qb.where('(p.id IN (:...accessibleIds) OR p."createdById" = :userId::uuid)', {
           accessibleIds,
           userId,
         });
@@ -97,8 +97,8 @@ export class ProjectsService {
     if (filters?.concernedUserId) {
       const cuid = filters.concernedUserId;
       qb.andWhere(
-        `(p.ownerId = :cuid OR p.id IN (SELECT pc."projectId" FROM project_concerned pc WHERE pc."userId" = :cuid))`,
-        { cuid },
+        `(p."ownerId" = :cuidStr OR p.id IN (SELECT pc."projectId" FROM project_concerned pc WHERE pc."userId" = :cuidUuid::uuid))`,
+        { cuidStr: cuid, cuidUuid: cuid },
       );
     }
 

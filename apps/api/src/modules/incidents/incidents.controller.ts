@@ -28,8 +28,8 @@ export class IncidentsController {
   @Get()
   async findAll(
     @CurrentUser() user: { userId: string },
-    @Query('objectId') objectId?: string,
-    @Query('groupId') groupId?: string,
+    @Query('objectId', new ParseUUIDPipe({ optional: true })) objectId?: string,
+    @Query('groupId', new ParseUUIDPipe({ optional: true })) groupId?: string,
   ): Promise<Incident[]> {
     return this.incidentsService.findAll(user.userId, { objectId, groupId });
   }

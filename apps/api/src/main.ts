@@ -33,8 +33,12 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);
 
-  // Health endpoint for Docker healthcheck
   const expressApp = app.getHttpAdapter().getInstance();
+  if (process.env.TRUST_PROXY === '1' || process.env.TRUST_PROXY === 'true') {
+    expressApp.set('trust proxy', 1);
+  }
+
+  // Health endpoint for Docker healthcheck
   expressApp.get('/health', (_req: any, res: any) => {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
   });

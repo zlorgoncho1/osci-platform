@@ -19,8 +19,12 @@ export interface ReferentielFilters {
   limit?: number;
 }
 
+export interface ReferentielWithStats extends Referentiel {
+  stats: { totalControls: number; mappedControls: number; coveragePercent: number };
+}
+
 export interface ReferentielListResult {
-  data: Referentiel[];
+  data: ReferentielWithStats[];
   total: number;
   page: number;
   limit: number;
@@ -61,7 +65,25 @@ export class ReferentielsService {
     }
 
     const [data, total] = await qb.getManyAndCount();
-    return { data, total, page, limit };
+
+    // Batch-compute stats for all referentiels in one query
+    const allControlIds = data.flatMap((r) => (r.controls || []).map((c) => c.id));
+    const mappedCounts = await this.getMappedCountsByControlIds(allControlIds);
+
+    const enrichedData = data.map((ref) => {
+      const controlIds = (ref.controls || []).map((c) => c.id);
+      const totalControls = controlIds.length;
+      const mappedControlIds = controlIds.filter((id) => (mappedCounts[id] || 0) > 0);
+      const mappedControls = mappedControlIds.length;
+      const coveragePercent = totalControls > 0
+        ? Math.round((mappedControls / totalControls) * 10000) / 100
+        : 0;
+      return Object.assign(ref, {
+        stats: { totalControls, mappedControls, coveragePercent },
+      }) as ReferentielWithStats;
+    });
+
+    return { data: enrichedData, total, page, limit };
   }
 
   async findOne(id: string): Promise<Referentiel> {
@@ -172,6 +194,53 @@ export class ReferentielsService {
       relations: ['checklist'],
       order: { orderIndex: 'ASC' },
     });
+  }
+
+  async getMappedCountsByReferentiel(referentielId: string): Promise<Record<string, number>> {
+    // Validate referentiel exists
+    const exists = await this.referentielRepository.count({ where: { id: referentielId } });
+    if (exists === 0) {
+      throw new NotFoundException(`Referentiel with id ${referentielId} not found`);
+    }
+    // Lightweight query: only fetch control IDs, no parent/children relations
+    const controls = await this.controlRepository.find({
+      where: { referentielId },
+      select: ['id'],
+    });
+    const controlIds = controls.map((c) => c.id);
+    if (controlIds.length === 0) return {};
+
+    const results = await this.checklistItemRepository
+      .createQueryBuilder('item')
+      .select('item.frameworkControlId', 'controlId')
+      .addSelect('COUNT(*)', 'count')
+      .where('item.frameworkControlId IN (:...controlIds)', { controlIds })
+      .groupBy('item.frameworkControlId')
+      .getRawMany();
+
+    const counts: Record<string, number> = {};
+    for (const row of results) {
+      counts[row.controlId] = parseInt(row.count, 10);
+    }
+    return counts;
+  }
+
+  async getMappedCountsByControlIds(controlIds: string[]): Promise<Record<string, number>> {
+    if (controlIds.length === 0) return {};
+
+    const results = await this.checklistItemRepository
+      .createQueryBuilder('item')
+      .select('item.frameworkControlId', 'controlId')
+      .addSelect('COUNT(*)', 'count')
+      .where('item.frameworkControlId IN (:...controlIds)', { controlIds })
+      .groupBy('item.frameworkControlId')
+      .getRawMany();
+
+    const counts: Record<string, number> = {};
+    for (const row of results) {
+      counts[row.controlId] = parseInt(row.count, 10);
+    }
+    return counts;
   }
 
   async findChecklistsByReferentiel(referentielId: string): Promise<Checklist[]> {

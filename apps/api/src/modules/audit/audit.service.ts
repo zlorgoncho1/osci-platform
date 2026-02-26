@@ -59,7 +59,7 @@ export class AuditService {
         .take(limit);
 
       if (filters?.actorId) {
-        qb.andWhere('log.actorId = :actorId', { actorId: filters.actorId });
+        qb.andWhere('log."actorId" = :actorId', { actorId: filters.actorId });
       }
       if (filters?.action) {
         qb.andWhere('log.action = :action', { action: filters.action });

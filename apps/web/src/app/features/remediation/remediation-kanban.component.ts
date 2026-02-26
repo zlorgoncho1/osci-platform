@@ -562,9 +562,12 @@ export class RemediationKanbanComponent implements OnInit {
   constructor(private api: ApiService, private confirmService: ConfirmService, public perm: PermissionService) {}
 
   ngOnInit(): void {
-    this.api.getAuthMe().subscribe({
-      next: (me) => { this.currentUserId = me?.userId || me?.id || null; },
-      error: () => {},
+    // Use PermissionService.me$ which is already resolved by the auth guard
+    this.perm.me$.subscribe((me) => {
+      const prev = this.currentUserId;
+      this.currentUserId = me?.id || null;
+      // Re-fetch tasks when userId becomes available and "My Tasks" is active
+      if (!prev && this.currentUserId && this.showMyTasks) this.loadTasks();
     });
     this.loadProjects();
     this.loadObjects();

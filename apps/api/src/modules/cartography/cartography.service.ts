@@ -43,9 +43,9 @@ export class CartographyService {
       .orderBy('a.createdAt', 'DESC');
 
     if (accessibleIds.length > 0) {
-      qb.where('(a.id IN (:...accessibleIds) OR a.createdById = :userId)', { accessibleIds, userId });
+      qb.where('(a.id IN (:...accessibleIds) OR a."createdById" = :userId::uuid)', { accessibleIds, userId });
     } else {
-      qb.where('a.createdById = :userId', { userId });
+      qb.where('a."createdById" = :userId::uuid', { userId });
     }
 
     return qb.getMany();
@@ -106,15 +106,15 @@ export class CartographyService {
 
     if (accessibleIds.length > 0) {
       qb.where(
-        '(r.sourceAssetId IN (:...accessibleIds) OR source.createdById = :userId)',
+        '(r.sourceAssetId IN (:...accessibleIds) OR source."createdById" = :userId::uuid)',
         { accessibleIds, userId },
       ).andWhere(
-        '(r.targetAssetId IN (:...aids) OR target.createdById = :uid)',
+        '(r.targetAssetId IN (:...aids) OR target."createdById" = :uid::uuid)',
         { aids: accessibleIds, uid: userId },
       );
     } else {
-      qb.where('source.createdById = :userId', { userId })
-        .andWhere('target.createdById = :uid', { uid: userId });
+      qb.where('source."createdById" = :userId::uuid', { userId })
+        .andWhere('target."createdById" = :uid::uuid', { uid: userId });
     }
 
     return qb.getMany();
@@ -246,7 +246,7 @@ export class CartographyService {
     };
   }
 
-  // Enriched Topology — with scores and incidents
+  // Enriched Topology — with scores and incidents (batch queries)
   async getEnrichedTopology(userId: string): Promise<{
     nodes: Array<Asset & { score?: number; openIncidents?: number }>;
     edges: Relation[];
@@ -254,29 +254,28 @@ export class CartographyService {
   }> {
     const { nodes, edges, stats } = await this.getTopologyGraph(userId);
 
-    const enrichedNodes = await Promise.all(
-      nodes.map(async (asset) => {
-        const enriched: any = { ...asset };
-        if (asset.objectId) {
-          try {
-            const score = await this.scoringService.getScoreForObject(asset.objectId);
-            enriched.score = score?.value ?? null;
-          } catch {
-            enriched.score = null;
-          }
-          try {
-            const incidents = await this.incidentsService.findAll(userId, { objectId: asset.objectId });
-            enriched.openIncidents = incidents.filter((i) => i.status === 'open').length;
-          } catch {
-            enriched.openIncidents = 0;
-          }
-        } else {
-          enriched.score = null;
-          enriched.openIncidents = 0;
-        }
-        return enriched;
-      }),
-    );
+    // Collect all objectIds from nodes that have one
+    const objectIds = nodes
+      .map((n) => n.objectId)
+      .filter((id): id is string => !!id);
+
+    // Batch fetch scores and incident counts (2 queries instead of 2N)
+    const [scoresMap, incidentCountsMap] = await Promise.all([
+      this.scoringService.getScoresByObjectIds(objectIds),
+      this.incidentsService.countOpenByObjectIds(objectIds),
+    ]);
+
+    const enrichedNodes = nodes.map((asset) => {
+      const enriched: any = { ...asset };
+      if (asset.objectId) {
+        enriched.score = scoresMap[asset.objectId] ?? null;
+        enriched.openIncidents = incidentCountsMap[asset.objectId] ?? 0;
+      } else {
+        enriched.score = null;
+        enriched.openIncidents = 0;
+      }
+      return enriched;
+    });
 
     return { nodes: enrichedNodes, edges, stats };
   }

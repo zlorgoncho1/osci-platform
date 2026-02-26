@@ -62,7 +62,7 @@ export class EvidenceController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async findAll(
     @CurrentUser() user: { userId: string },
-    @Query('objectId') objectId?: string,
+    @Query('objectId', new ParseUUIDPipe({ optional: true })) objectId?: string,
     @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,

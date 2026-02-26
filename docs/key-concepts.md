@@ -81,6 +81,8 @@ OSCI utilise un modèle d'autorisation riche combinant :
 - **Rôles** — Ensembles de permissions prédéfinis (SecurityAdmin, SecurityManager, Auditor, etc.)
 - **Permissions directes** — Permissions individuelles sur un type de ressource
 - **Groupes d'utilisateurs** — Regroupements dont les membres héritent des rôles et permissions du groupe
+- **Accès par ressource** — Permissions sur une instance spécifique (ex. un projet particulier)
 - **Permissions effectives** — Union de toutes les sources de permissions pour un utilisateur donné
+- **Hiérarchie des actions** — Les actions de niveau supérieur impliquent automatiquement les actions de base (`update` implique `read`, `manage` implique tout)
 
 Pour plus de détails, consultez [Rôles et permissions](roles-and-permissions).

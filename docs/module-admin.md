@@ -11,7 +11,36 @@ L'administration centralise la gestion des accès et des habilitations. Elle est
 ### Liste des utilisateurs
 
 - **Consulter** la liste de tous les utilisateurs avec leurs rôles et statut
-- **Rechercher** un utilisateur par nom ou email
+- **Rechercher** un utilisateur par nom ou email via la barre de recherche
+
+### Filtres par source
+
+La barre de filtres permet d'afficher les utilisateurs selon leur origine :
+
+| Filtre | Description |
+|---|---|
+| **All** | Tous les utilisateurs actifs (enabled) |
+| **Keycloak** | Utilisateurs actifs synchronisés avec Keycloak (SSO) |
+| **Local** | Utilisateurs actifs créés localement (sans lien Keycloak) |
+| **Disabled** | Utilisateurs désactivés |
+
+Les filtres se combinent avec la recherche textuelle (nom, prénom, email).
+
+### Détection de doublons
+
+Le bouton **Duplicates** (visible pour les administrateurs) ouvre un panneau listant les groupes de doublons potentiels. Un badge indique le nombre de groupes détectés.
+
+Trois critères de détection sont appliqués automatiquement :
+
+1. **Email identique** — Même adresse email (cas rare, possible en cas d'import manuel)
+2. **Nom similaire** — Même combinaison prénom + nom (normalisée, insensible à la casse)
+3. **Préfixe email identique** — Même partie locale d'email (avant @) avec des domaines différents
+
+Pour chaque groupe, un bouton **Merge** pré-remplit le formulaire de fusion en sélectionnant automatiquement l'utilisateur à conserver (priorité au compte Keycloak, sinon au dernier connecté).
+
+### Fusion d'utilisateurs (Merge)
+
+Permet de fusionner deux comptes utilisateur. Tous les rôles, accès et références sont transférés vers le compte conservé, et le compte source est supprimé. Accessible via le bouton **Merge Users** dans l'en-tête ou via le panneau de doublons.
 
 ### Édition d'un utilisateur
 

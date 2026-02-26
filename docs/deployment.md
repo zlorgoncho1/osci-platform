@@ -68,6 +68,7 @@ Ces deux variables activent le mode d'authentification locale (email / mot de pa
 | `KEYCLOAK_REALM` | Nom du realm Keycloak | `osci` |
 | `KEYCLOAK_CLIENT_ID` | Client ID Keycloak | `osci-web` |
 | `API_CORS_ORIGIN` | Origine CORS autorisée | `http://localhost` |
+| `TRUST_PROXY` | Mettre à `1` lorsque l'API est derrière un reverse proxy (Nginx, Traefik, etc.) pour que l'IP client réelle soit utilisée dans les logs d'audit et le rate limiting (X-Forwarded-For / X-Real-IP). En dev sans proxy, laisser à `0`. | `0` |
 | `GITHUB_REFERENTIEL_REPO` | Dépôt GitHub des référentiels communautaires | `zlorgoncho1/osci-referentiel` |
 
 ## Lancer la plateforme
@@ -128,6 +129,10 @@ Au premier démarrage, les services suivants sont initialisés automatiquement :
 | MinIO Console | 9001 | 9001 | Administration MinIO |
 | OPA | 8181 | — | Moteur de politiques |
 
+### Logs d'audit et IP client
+
+Les logs d'audit enregistrent pour chaque action l'**acteur** (utilisateur connecté, ou `anonymous` si non authentifié) et l'**adresse IP** du client. Lorsque l'API est derrière un reverse proxy (Nginx dans le déploiement Docker), définir `TRUST_PROXY=1` dans l'environnement du conteneur API pour que l'IP réelle du client soit utilisée (le proxy doit envoyer les en-têtes `X-Real-IP` et `X-Forwarded-For`, ce qui est déjà le cas avec le `nginx.conf` fourni). Sans cette variable, l'IP enregistrée serait celle du proxy.
+
 ## Vérifier le déploiement
 
 Après le démarrage, accédez à :
@@ -142,10 +147,11 @@ Connectez-vous à l'application avec l'email et le mot de passe définis dans `K
 
 ### HTTPS / TLS
 
-En production, placez un reverse proxy (Traefik, Caddy ou un Nginx externe) devant le port 80 avec un certificat TLS. Mettez à jour les URLs dans `.env` :
+En production, placez un reverse proxy (Traefik, Caddy ou un Nginx externe) devant le port 80 avec un certificat TLS. Mettez à jour les URLs dans `.env` et activez la confiance au proxy pour l'IP client (logs d'audit, rate limiting) :
 
 ```
 API_CORS_ORIGIN=https://votre-domaine.com
+TRUST_PROXY=1
 WEB_APP_URL=https://votre-domaine.com
 KEYCLOAK_URL=https://votre-domaine.com/auth
 KEYCLOAK_ISSUER=https://votre-domaine.com/auth/realms/osci

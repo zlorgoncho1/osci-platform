@@ -29,9 +29,9 @@ export class IncidentsService {
     // Apply visibility filter
     if (accessibleIds !== 'all') {
       if (accessibleIds.length > 0) {
-        qb.andWhere('(i.id IN (:...accessibleIds) OR i.createdById = :userId)', { accessibleIds, userId });
+        qb.andWhere('(i.id IN (:...accessibleIds) OR i."createdById" = :userId::uuid)', { accessibleIds, userId });
       } else {
-        qb.andWhere('i.createdById = :userId', { userId });
+        qb.andWhere('i."createdById" = :userId::uuid', { userId });
       }
     }
 
@@ -46,10 +46,34 @@ export class IncidentsService {
         qb.andWhere('i.objectId IN (:...objectIds)', { objectIds });
       }
     } else if (filters?.objectId) {
-      qb.andWhere('i.objectId = :objectId', { objectId: filters.objectId });
+      qb.andWhere('i."objectId" = :objectId::uuid', { objectId: filters.objectId });
     }
 
     return qb.getMany();
+  }
+
+  /**
+   * Batch count open incidents by objectIds.
+   * WARNING: No RBAC filtering — caller must ensure objectIds are already
+   * scoped to the user's visible resources (e.g. via getTopologyGraph).
+   */
+  async countOpenByObjectIds(objectIds: string[]): Promise<Record<string, number>> {
+    if (objectIds.length === 0) return {};
+
+    const results = await this.incidentRepository
+      .createQueryBuilder('i')
+      .select('i.objectId', 'objectId')
+      .addSelect('COUNT(*)', 'count')
+      .where('i.objectId IN (:...objectIds)', { objectIds })
+      .andWhere("i.status = 'open'")
+      .groupBy('i.objectId')
+      .getRawMany();
+
+    const counts: Record<string, number> = {};
+    for (const row of results) {
+      counts[row.objectId] = parseInt(row.count, 10);
+    }
+    return counts;
   }
 
   private async getObjectIdsByGroup(groupId: string): Promise<string[]> {
@@ -57,7 +81,7 @@ export class IncidentsService {
       .createQueryBuilder()
       .select('gom.objectId')
       .from('object_group_members', 'gom')
-      .where('gom.groupId = :groupId', { groupId })
+      .where('gom."groupId" = :groupId::uuid', { groupId })
       .getRawMany();
     return members.map((m: { objectId: string }) => m.objectId);
   }

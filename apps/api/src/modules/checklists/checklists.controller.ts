@@ -102,6 +102,15 @@ export class ChecklistsController {
     return this.checklistsService.remove(id);
   }
 
+  // Batch sync items (bulk upsert + delete)
+  @Patch(':id/items/sync')
+  async syncItems(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { deletions: string[]; items: any[] },
+  ): Promise<{ updated: number; created: number; deleted: number }> {
+    return this.checklistsService.syncItems(id, body);
+  }
+
   // Item CRUD
   @Post(':id/items')
   async addItem(

@@ -19,6 +19,28 @@ export interface AuthMeResponse {
   permissions: EffectivePermissions;
 }
 
+/**
+ * Action hierarchy: each action implicitly grants the actions listed here.
+ * manage → all actions ; create/update/delete/export → read
+ */
+const ACTION_IMPLIES: Record<string, string[]> = {
+  manage: ['read', 'create', 'update', 'delete', 'export'],
+  create: ['read'],
+  update: ['read'],
+  delete: ['read'],
+  export: ['read'],
+  read: [],
+};
+
+function actionSatisfies(grantedActions: string[], requiredAction: string): boolean {
+  for (const granted of grantedActions) {
+    if (granted === requiredAction) return true;
+    const implied = ACTION_IMPLIES[granted];
+    if (implied && implied.includes(requiredAction)) return true;
+  }
+  return false;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PermissionService {
   private permissionsSubject = new BehaviorSubject<EffectivePermissions | null>(
@@ -93,16 +115,14 @@ export class PermissionService {
     const globalPerm = perms.global.find(
       (g) => g.resourceType === resourceType,
     );
-    if (globalPerm?.actions.includes(action)) return true;
+    if (globalPerm && actionSatisfies(globalPerm.actions, action)) return true;
 
     // Also check if user has at least one resource-level access with this action
-    if (action === 'read') {
-      const hasAny = perms.resources.some(
-        (r) =>
-          r.resourceType === resourceType && r.actions.includes(action),
-      );
-      if (hasAny) return true;
-    }
+    const hasAny = perms.resources.some(
+      (r) =>
+        r.resourceType === resourceType && actionSatisfies(r.actions, action),
+    );
+    if (hasAny) return true;
 
     return false;
   }
@@ -123,14 +143,15 @@ export class PermissionService {
     const globalPerm = perms.global.find(
       (g) => g.resourceType === resourceType,
     );
-    if (globalPerm?.actions.includes(action)) return true;
+    if (globalPerm && actionSatisfies(globalPerm.actions, action)) return true;
 
     // Check resource-level
     const resourcePerm = perms.resources.find(
       (r) =>
         r.resourceType === resourceType && r.resourceId === resourceId,
     );
-    return resourcePerm?.actions.includes(action) ?? false;
+    if (!resourcePerm) return false;
+    return actionSatisfies(resourcePerm.actions, action);
   }
 
   clear(): void {

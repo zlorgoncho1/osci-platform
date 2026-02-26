@@ -21,6 +21,24 @@ export class ScoringService {
     });
   }
 
+  async getScoresByObjectIds(objectIds: string[]): Promise<Record<string, number | null>> {
+    if (objectIds.length === 0) return {};
+
+    const scores = await this.scoreRepository
+      .createQueryBuilder('score')
+      .distinctOn(['score.objectId'])
+      .where('score.objectId IN (:...objectIds)', { objectIds })
+      .orderBy('score.objectId')
+      .addOrderBy('score.computedAt', 'DESC')
+      .getMany();
+
+    const result: Record<string, number | null> = {};
+    for (const s of scores) {
+      result[s.objectId] = s.value;
+    }
+    return result;
+  }
+
   async getGlobalScore(): Promise<{
     globalScore: number;
     objectCount: number;

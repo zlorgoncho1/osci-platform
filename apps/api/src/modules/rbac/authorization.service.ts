@@ -8,7 +8,7 @@ import { UserPermission } from './entities/user-permission.entity';
 import { UserGroupMember } from './entities/user-group-member.entity';
 import { GroupRoleAssignment } from './entities/group-role-assignment.entity';
 import { GroupPermission } from './entities/group-permission.entity';
-import { ResourceType, Action, UserRole } from '../../common/enums';
+import { ResourceType, Action, UserRole, actionSatisfies } from '../../common/enums';
 
 export interface EffectivePermissions {
   roles: string[];
@@ -74,7 +74,7 @@ export class AuthorizationService {
       const groupRoles = await this.groupRoleRepo
         .createQueryBuilder('gra')
         .leftJoinAndSelect('gra.role', 'role')
-        .where('gra.groupId IN (:...groupIds)', { groupIds })
+        .where('gra.groupId = ANY(:groupIds::uuid[])', { groupIds })
         .getMany();
 
       for (const gr of groupRoles) {
@@ -123,11 +123,11 @@ export class AuthorizationService {
     if (roleIds.length > 0) {
       const permissions = await this.permissionRepo
         .createQueryBuilder('p')
-        .where('p.roleId IN (:...roleIds)', { roleIds })
+        .where('p.roleId = ANY(:roleIds::uuid[])', { roleIds })
         .andWhere('p.resourceType = :resourceType', { resourceType })
         .getMany();
 
-      if (permissions.some((p) => p.actions.includes(action))) {
+      if (permissions.some((p) => actionSatisfies(p.actions, action))) {
         return true;
       }
     }
@@ -136,11 +136,11 @@ export class AuthorizationService {
     if (groupIds.length > 0) {
       const groupPerms = await this.groupPermRepo
         .createQueryBuilder('gp')
-        .where('gp.groupId IN (:...groupIds)', { groupIds })
+        .where('gp.groupId = ANY(:groupIds::uuid[])', { groupIds })
         .andWhere('gp.resourceType = :resourceType', { resourceType })
         .getMany();
 
-      if (groupPerms.some((gp) => gp.actions.includes(action))) {
+      if (groupPerms.some((gp) => actionSatisfies(gp.actions, action))) {
         return true;
       }
     }
@@ -149,7 +149,7 @@ export class AuthorizationService {
     const userPerm = await this.userPermRepo.findOne({
       where: { userId, resourceType },
     });
-    if (userPerm && userPerm.actions.includes(action)) {
+    if (userPerm && actionSatisfies(userPerm.actions, action)) {
       return true;
     }
 
@@ -160,7 +160,7 @@ export class AuthorizationService {
       });
 
       if (access) {
-        return access.actions.includes(action);
+        return actionSatisfies(access.actions, action);
       }
 
       // Creator without explicit ResourceAccess → full access
@@ -187,11 +187,11 @@ export class AuthorizationService {
     if (roleIds.length > 0) {
       const permissions = await this.permissionRepo
         .createQueryBuilder('p')
-        .where('p.roleId IN (:...roleIds)', { roleIds })
+        .where('p.roleId = ANY(:roleIds::uuid[])', { roleIds })
         .andWhere('p.resourceType = :resourceType', { resourceType })
         .getMany();
 
-      if (permissions.some((p) => p.actions.includes(Action.Read))) {
+      if (permissions.some((p) => actionSatisfies(p.actions, Action.Read))) {
         return 'all';
       }
     }
@@ -200,11 +200,11 @@ export class AuthorizationService {
     if (groupIds.length > 0) {
       const groupPerms = await this.groupPermRepo
         .createQueryBuilder('gp')
-        .where('gp.groupId IN (:...groupIds)', { groupIds })
+        .where('gp.groupId = ANY(:groupIds::uuid[])', { groupIds })
         .andWhere('gp.resourceType = :resourceType', { resourceType })
         .getMany();
 
-      if (groupPerms.some((gp) => gp.actions.includes(Action.Read))) {
+      if (groupPerms.some((gp) => actionSatisfies(gp.actions, Action.Read))) {
         return 'all';
       }
     }
@@ -213,17 +213,17 @@ export class AuthorizationService {
     const userPerm = await this.userPermRepo.findOne({
       where: { userId, resourceType },
     });
-    if (userPerm && userPerm.actions.includes(Action.Read)) {
+    if (userPerm && actionSatisfies(userPerm.actions, Action.Read)) {
       return 'all';
     }
 
-    // Fall back to resource-level access
+    // Fall back to resource-level access — any action implies read
     const accesses = await this.resourceAccessRepo.find({
       where: { resourceType, userId },
     });
 
     return accesses
-      .filter((a) => a.actions.includes(Action.Read))
+      .filter((a) => actionSatisfies(a.actions, Action.Read))
       .map((a) => a.resourceId);
   }
 
@@ -238,7 +238,7 @@ export class AuthorizationService {
     if (roleIds.length > 0) {
       const rolePerms = await this.permissionRepo
         .createQueryBuilder('p')
-        .where('p.roleId IN (:...roleIds)', { roleIds })
+        .where('p.roleId = ANY(:roleIds::uuid[])', { roleIds })
         .getMany();
 
       for (const p of rolePerms) {
@@ -252,7 +252,7 @@ export class AuthorizationService {
     if (groupIds.length > 0) {
       const groupPerms = await this.groupPermRepo
         .createQueryBuilder('gp')
-        .where('gp.groupId IN (:...groupIds)', { groupIds })
+        .where('gp.groupId = ANY(:groupIds::uuid[])', { groupIds })
         .getMany();
 
       for (const gp of groupPerms) {

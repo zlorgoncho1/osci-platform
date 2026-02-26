@@ -52,6 +52,27 @@ Chaque permission autorise une ou plusieurs actions :
 | `export` | Exporter les données de la ressource |
 | `manage` | Administration complète (inclut toutes les actions) |
 
+### Hiérarchie implicite des actions
+
+Les actions suivent une hiérarchie : accorder une action de niveau supérieur accorde automatiquement les actions qu'elle implique, sans avoir à les cocher explicitement.
+
+```
+manage  →  read, create, update, delete, export
+create  →  read
+update  →  read
+delete  →  read
+export  →  read
+read    →  (aucune)
+```
+
+**Exemples concrets :**
+
+- Accorder `update` sur un projet → l'utilisateur **voit** le projet dans la liste et peut le modifier, mais ne peut ni le supprimer ni l'exporter
+- Accorder `manage` sur un objet → l'utilisateur dispose de toutes les actions sur cet objet, y compris la gestion des accès
+- Accorder `export` sur un rapport → l'utilisateur peut le consulter et le télécharger, mais pas le modifier ni le supprimer
+
+Cette hiérarchie s'applique à **tous les niveaux** de permission : rôles globaux, permissions directes, permissions de groupe et accès par ressource (ResourceAccess).
+
 ## Permissions directes
 
 En plus des rôles, des permissions peuvent être attribuées **directement à un utilisateur** sur un type de ressource. Cela permet de gérer des cas particuliers sans créer de rôle dédié.
@@ -111,9 +132,9 @@ La visibilité par ressource s'applique à **tous** les types "par instance" :
 
 ### Règle de visibilité
 
-Les listes ne retournent que les entrées pour lesquelles l'utilisateur a au moins `read` :
+Les listes ne retournent que les entrées pour lesquelles l'utilisateur a au moins `read` (directement ou par hiérarchie implicite — par exemple un accès `update` suffit puisqu'il implique `read`) :
 - Via un **rôle global** (toutes les instances sont visibles)
-- Via un **ResourceAccess** explicite sur l'instance
+- Via un **ResourceAccess** explicite sur l'instance (toute action accorde la visibilité grâce à la hiérarchie)
 - En tant que **créateur** de l'instance (champ `createdById`, `uploadedById` ou `generatedById`)
 
 ### Gestion des accès

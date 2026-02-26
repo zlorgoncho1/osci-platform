@@ -42,9 +42,9 @@ export class ReportingService {
       .orderBy('r.createdAt', 'DESC');
 
     if (accessibleIds.length > 0) {
-      qb.where('(r.id IN (:...accessibleIds) OR r.generatedById = :userId)', { accessibleIds, userId });
+      qb.where('(r.id IN (:...accessibleIds) OR r."generatedById" = :userId)', { accessibleIds, userId });
     } else {
-      qb.where('r.generatedById = :userId', { userId });
+      qb.where('r."generatedById" = :userId', { userId });
     }
 
     return qb.getMany();
@@ -203,18 +203,16 @@ export class ReportingService {
     const stats = await this.referentielsService.getComplianceStats(referentielId);
     const controls = referentiel.controls || [];
 
-    const controlsWithStatus = await Promise.all(
-      controls.map(async (ctrl: any) => {
-        const mappedItems = await this.referentielsService.getMappedChecklistItems(ctrl.id);
-        return {
-          id: ctrl.id,
-          code: ctrl.code,
-          title: ctrl.title,
-          mapped: mappedItems.length > 0,
-          mappingCount: mappedItems.length,
-        };
-      }),
-    );
+    const controlIds = controls.map((ctrl: any) => ctrl.id);
+    const mappedCounts = await this.referentielsService.getMappedCountsByControlIds(controlIds);
+
+    const controlsWithStatus = controls.map((ctrl: any) => ({
+      id: ctrl.id,
+      code: ctrl.code,
+      title: ctrl.title,
+      mapped: (mappedCounts[ctrl.id] ?? 0) > 0,
+      mappingCount: mappedCounts[ctrl.id] ?? 0,
+    }));
 
     return {
       type: 'compliance-by-referentiel',

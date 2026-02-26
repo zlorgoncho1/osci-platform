@@ -258,7 +258,7 @@ export class UsersService {
     return this.userRepository
       .createQueryBuilder('user')
       .addSelect('user.passwordHash')
-      .where('user.id = :id', { id })
+      .where('user.id = :id::uuid', { id })
       .getOne();
   }
 
@@ -275,7 +275,7 @@ export class UsersService {
       .createQueryBuilder()
       .update(User)
       .set({ passwordHash: hash, mustChangePassword: mustChange })
-      .where('id = :id', { id })
+      .where('id = :id::uuid', { id })
       .execute();
   }
 

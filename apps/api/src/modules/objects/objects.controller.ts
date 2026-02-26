@@ -33,7 +33,7 @@ export class ObjectsController {
   async findAll(
     @CurrentUser() user: { userId: string },
     @Query('type') type?: ObjectType,
-    @Query('parentId') parentId?: string,
+    @Query('parentId', new ParseUUIDPipe({ optional: true })) parentId?: string,
   ): Promise<SecObject[]> {
     return this.objectsService.findAll(user.userId, { type, parentId });
   }

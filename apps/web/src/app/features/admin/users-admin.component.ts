@@ -41,6 +41,74 @@ import { PermissionService } from '../../core/services/permission.service';
         </div>
       </div>
 
+      <!-- Filters Bar -->
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="relative flex-1 min-w-[200px] max-w-sm">
+          <iconify-icon icon="solar:magnifer-linear" width="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"></iconify-icon>
+          <input
+            type="text"
+            [(ngModel)]="searchText"
+            placeholder="Search by name or email..."
+            class="w-full pl-9 pr-3 py-2 bg-zinc-800 border border-white/10 rounded-lg text-zinc-200 text-sm focus:outline-none focus:border-emerald-500/50" />
+        </div>
+
+        <div class="flex gap-1">
+          <button *ngFor="let f of sourceFilters"
+            (click)="activeSourceFilter = f.value"
+            class="px-3 py-1.5 text-xs rounded-lg transition-colors"
+            [class]="activeSourceFilter === f.value ? 'bg-emerald-600/30 text-emerald-400 border border-emerald-500/40' : 'bg-zinc-800 text-zinc-400 border border-white/10 hover:bg-zinc-700'">
+            {{ f.label }}
+          </button>
+        </div>
+
+        <button
+          *ngIf="permissionService.isAdmin"
+          (click)="duplicatesPanelOpen = !duplicatesPanelOpen"
+          class="px-3 py-1.5 text-xs rounded-lg transition-colors flex items-center gap-2"
+          [class]="duplicatesPanelOpen ? 'bg-purple-600/30 text-purple-400 border border-purple-500/40' : 'bg-zinc-800 text-zinc-400 border border-white/10 hover:bg-zinc-700'">
+          <iconify-icon icon="solar:copy-bold" width="14"></iconify-icon>
+          Duplicates
+          <span *ngIf="duplicateGroups.length > 0"
+            class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-purple-500/30 text-purple-300">
+            {{ duplicateGroups.length }}
+          </span>
+        </button>
+      </div>
+
+      <!-- Duplicates Panel -->
+      <div *ngIf="duplicatesPanelOpen && duplicateGroups.length > 0"
+        class="bg-purple-950/20 border border-purple-500/20 rounded-xl p-4 space-y-3">
+        <h3 class="text-sm font-semibold text-purple-300 flex items-center gap-2">
+          <iconify-icon icon="solar:copy-bold" width="16"></iconify-icon>
+          Potential Duplicates ({{ duplicateGroups.length }} groups)
+        </h3>
+        <div *ngFor="let group of duplicateGroups" class="bg-zinc-900/60 border border-white/5 rounded-lg p-3">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-zinc-500 uppercase font-medium">{{ group.reason }}</span>
+            <button
+              (click)="mergeFromDuplicate(group)"
+              class="px-2 py-1 text-xs bg-purple-600/20 text-purple-400 rounded hover:bg-purple-600/30 transition-colors flex items-center gap-1">
+              <iconify-icon icon="solar:users-group-two-rounded-bold" width="12"></iconify-icon>
+              Merge
+            </button>
+          </div>
+          <div class="space-y-1">
+            <div *ngFor="let u of group.users" class="flex items-center gap-3 text-xs">
+              <span class="text-zinc-200 min-w-[160px]">{{ u.email }}</span>
+              <span class="text-zinc-500">{{ u.firstName || '' }} {{ u.lastName || '' }}</span>
+              <span *ngIf="u.enabled === false" class="text-red-400">Disabled</span>
+              <span *ngIf="u.enabled !== false && u.keycloakId" class="text-emerald-400">Active</span>
+              <span *ngIf="u.enabled !== false && !u.keycloakId" class="text-amber-400">Pending</span>
+              <span class="text-zinc-600 ml-auto">{{ u.lastLoginAt ? (u.lastLoginAt | date:'short') : 'Never logged in' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="duplicatesPanelOpen && duplicateGroups.length === 0"
+        class="bg-zinc-900/50 border border-white/10 rounded-xl p-4 text-center text-sm text-zinc-500">
+        No potential duplicates detected.
+      </div>
+
       <!-- Users Table -->
       <div class="bg-zinc-900/50 border border-white/10 rounded-xl overflow-hidden">
         <table class="w-full text-sm">
@@ -55,7 +123,7 @@ import { PermissionService } from '../../core/services/permission.service';
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let user of users" class="border-b border-white/5 hover:bg-white/[0.02]">
+            <tr *ngFor="let user of filteredUsers" class="border-b border-white/5 hover:bg-white/[0.02]">
               <td class="px-4 py-3 text-zinc-200">
                 {{ user.firstName || '' }} {{ user.lastName || '' }}
                 <span *ngIf="!user.firstName && !user.lastName" class="text-zinc-500">N/A</span>
@@ -410,6 +478,20 @@ export class UsersAdminComponent implements OnInit {
   kcMenuOpen: string | null = null;
   kcMenuPosition: { top: number; left: number } | null = null;
 
+  // Filters
+  searchText = '';
+  activeSourceFilter: 'all' | 'keycloak' | 'local' | 'disabled' = 'all';
+  sourceFilters = [
+    { label: 'All', value: 'all' as const },
+    { label: 'Keycloak', value: 'keycloak' as const },
+    { label: 'Local', value: 'local' as const },
+    { label: 'Disabled', value: 'disabled' as const },
+  ];
+
+  // Duplicates
+  duplicatesPanelOpen = false;
+  duplicateGroups: { reason: string; users: any[] }[] = [];
+
   // Merge
   mergeModalOpen = false;
   mergeKeepId = '';
@@ -428,6 +510,7 @@ export class UsersAdminComponent implements OnInit {
   loadData(): void {
     this.api.getUsers().subscribe((users) => {
       this.users = users;
+      this.detectDuplicates();
       for (const user of users) {
         this.api.getUserRoles(user.id).subscribe((roles) => {
           this.userRolesMap.set(user.id, roles);
@@ -661,6 +744,124 @@ export class UsersAdminComponent implements OnInit {
       next: () => alert('Password change will be required at next SSO login.'),
       error: (err) => alert(err.error?.message || 'Failed'),
     });
+  }
+
+  // --- Filters ---
+
+  get filteredUsers(): any[] {
+    let result = this.users;
+
+    // Source filter
+    switch (this.activeSourceFilter) {
+      case 'keycloak':
+        result = result.filter((u) => u.enabled !== false && u.keycloakId);
+        break;
+      case 'local':
+        result = result.filter((u) => u.enabled !== false && !u.keycloakId);
+        break;
+      case 'disabled':
+        result = result.filter((u) => u.enabled === false);
+        break;
+      default: // 'all' — show all enabled
+        result = result.filter((u) => u.enabled !== false);
+        break;
+    }
+
+    // Text search
+    const q = this.searchText.trim().toLowerCase();
+    if (q) {
+      result = result.filter(
+        (u) =>
+          (u.email || '').toLowerCase().includes(q) ||
+          (u.firstName || '').toLowerCase().includes(q) ||
+          (u.lastName || '').toLowerCase().includes(q),
+      );
+    }
+
+    return result;
+  }
+
+  // --- Duplicates ---
+
+  detectDuplicates(): void {
+    const groups: { reason: string; users: any[] }[] = [];
+    const seen = new Set<string>();
+
+    // 1. Exact email duplicates
+    const byEmail = new Map<string, any[]>();
+    for (const u of this.users) {
+      const email = (u.email || '').toLowerCase().trim();
+      if (!email) continue;
+      if (!byEmail.has(email)) byEmail.set(email, []);
+      byEmail.get(email)!.push(u);
+    }
+    for (const [email, users] of byEmail) {
+      if (users.length > 1) {
+        const key = users.map((u: any) => u.id).sort().join(',');
+        if (!seen.has(key)) {
+          seen.add(key);
+          groups.push({ reason: 'Same email: ' + email, users });
+        }
+      }
+    }
+
+    // 2. Same normalized full name
+    const byName = new Map<string, any[]>();
+    for (const u of this.users) {
+      const fullName = ((u.firstName || '') + (u.lastName || '')).toLowerCase().trim();
+      if (!fullName) continue;
+      if (!byName.has(fullName)) byName.set(fullName, []);
+      byName.get(fullName)!.push(u);
+    }
+    for (const [, users] of byName) {
+      if (users.length > 1) {
+        const key = users.map((u: any) => u.id).sort().join(',');
+        if (!seen.has(key)) {
+          seen.add(key);
+          groups.push({ reason: 'Same name', users });
+        }
+      }
+    }
+
+    // 3. Same email prefix (local part) with different domains
+    const byPrefix = new Map<string, any[]>();
+    for (const u of this.users) {
+      const email = (u.email || '').toLowerCase().trim();
+      const atIdx = email.indexOf('@');
+      if (atIdx <= 0) continue;
+      const prefix = email.substring(0, atIdx);
+      if (!byPrefix.has(prefix)) byPrefix.set(prefix, []);
+      byPrefix.get(prefix)!.push(u);
+    }
+    for (const [prefix, users] of byPrefix) {
+      if (users.length > 1) {
+        // Only include if there are actually different domains
+        const domains = new Set(users.map((u: any) => (u.email || '').toLowerCase().split('@')[1]));
+        if (domains.size <= 1) continue;
+        const key = users.map((u: any) => u.id).sort().join(',');
+        if (!seen.has(key)) {
+          seen.add(key);
+          groups.push({ reason: 'Same email prefix: ' + prefix, users });
+        }
+      }
+    }
+
+    this.duplicateGroups = groups;
+  }
+
+  mergeFromDuplicate(group: { reason: string; users: any[] }): void {
+    // Pick the "keep" user: prefer the one with keycloakId, else the most recently logged in
+    const sorted = [...group.users].sort((a, b) => {
+      if (a.keycloakId && !b.keycloakId) return -1;
+      if (!a.keycloakId && b.keycloakId) return 1;
+      const aDate = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0;
+      const bDate = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0;
+      return bDate - aDate;
+    });
+    this.mergeKeepId = sorted[0].id;
+    this.mergeRemoveId = sorted.length > 1 ? sorted[1].id : '';
+    this.mergeError = '';
+    this.mergeModalOpen = true;
   }
 
   // --- Merge ---

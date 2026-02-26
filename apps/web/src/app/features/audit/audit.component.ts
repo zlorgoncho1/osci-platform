@@ -1,7 +1,9 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 import { ApiService } from '../../core/services/api.service';
 import { PermissionService } from '../../core/services/permission.service';
 
@@ -62,7 +64,7 @@ import { PermissionService } from '../../core/services/permission.service';
         <div class="glass-panel p-4 flex items-center gap-4 flex-wrap">
           <div class="relative flex-1 min-w-[200px]">
             <iconify-icon icon="solar:magnifer-linear" width="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600"></iconify-icon>
-            <input type="text" [(ngModel)]="evidenceFilters.search" (ngModelChange)="onEvidenceFilterChange()" placeholder="Search by filename..."
+            <input type="text" [(ngModel)]="evidenceFilters.search" (ngModelChange)="onEvidenceSearchChange()" placeholder="Search by filename..."
               class="w-full bg-zinc-900 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-xs text-zinc-300 placeholder-zinc-600 focus:border-white/20 focus:outline-none transition-colors" />
           </div>
           <select [(ngModel)]="evidenceFilters.objectId" (ngModelChange)="onEvidenceFilterChange()"
@@ -136,7 +138,7 @@ import { PermissionService } from '../../core/services/permission.service';
         <div class="glass-panel p-4 flex items-center gap-4 flex-wrap">
           <div class="relative flex-1 min-w-[200px]">
             <iconify-icon icon="solar:magnifer-linear" width="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600"></iconify-icon>
-            <input type="text" [(ngModel)]="filters.search" (ngModelChange)="loadLogs()" placeholder="Search audit logs..."
+            <input type="text" [(ngModel)]="filters.search" (ngModelChange)="onAuditSearchChange()" placeholder="Search audit logs..."
               class="w-full bg-zinc-900 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-xs text-zinc-300 placeholder-zinc-600 focus:border-white/20 focus:outline-none transition-colors" />
           </div>
           <select [(ngModel)]="filters.action" (ngModelChange)="loadLogs()"
@@ -217,7 +219,7 @@ import { PermissionService } from '../../core/services/permission.service';
     </div>
   `,
 })
-export class AuditComponent implements OnInit {
+export class AuditComponent implements OnInit, OnDestroy {
   activeTab: 'evidence' | 'audit' = 'evidence';
 
   // Audit state
@@ -236,6 +238,11 @@ export class AuditComponent implements OnInit {
   evidenceFilters = { search: '', objectId: '' };
   objectsList: any[] = [];
 
+  // Debounce subjects
+  private auditSearchSubject = new Subject<void>();
+  private evidenceSearchSubject = new Subject<void>();
+  private subs: Subscription[] = [];
+
   private readonly knownActions = new Set([
     'CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'RUN_CHECKLIST', 'UPLOAD_EVIDENCE',
   ]);
@@ -243,9 +250,25 @@ export class AuditComponent implements OnInit {
   constructor(private api: ApiService, public perm: PermissionService) {}
 
   ngOnInit(): void {
+    this.subs.push(
+      this.auditSearchSubject.pipe(debounceTime(350)).subscribe(() => this.loadLogs()),
+      this.evidenceSearchSubject.pipe(debounceTime(350)).subscribe(() => this.onEvidenceFilterChange()),
+    );
     this.loadEvidence();
     this.loadObjects();
     this.loadLogs();
+  }
+
+  ngOnDestroy(): void {
+    this.subs.forEach((s) => s.unsubscribe());
+  }
+
+  onAuditSearchChange(): void {
+    this.auditSearchSubject.next();
+  }
+
+  onEvidenceSearchChange(): void {
+    this.evidenceSearchSubject.next();
   }
 
   switchTab(tab: 'evidence' | 'audit'): void {

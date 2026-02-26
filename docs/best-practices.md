@@ -41,6 +41,8 @@ Ce document rassemble les recommandations d'usage pour tirer le meilleur parti d
 - Utilisez les groupes d'utilisateurs pour simplifier la gestion des habilitations
 - Préférez les rôles prédéfinis aux permissions directes quand c'est possible
 - Révisez régulièrement les accès et les appartenances aux groupes
+- **Surveillez les doublons** — Consultez régulièrement le panneau Duplicates dans la gestion des utilisateurs pour détecter et fusionner les comptes en double (ex. même personne avec un compte local et un compte Keycloak)
+- **Tirez parti de la hiérarchie des actions** — Il suffit d'accorder `update` pour qu'un utilisateur voie la ressource dans ses listes (la lecture est implicite). Inutile de cocher `read` en plus de `update`, `delete`, `create` ou `export`. L'action `manage` accorde toutes les permissions y compris la gestion des accès
 
 ## Capitaliser sur les preuves
 

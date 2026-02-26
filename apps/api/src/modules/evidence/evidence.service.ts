@@ -125,14 +125,14 @@ export class EvidenceService implements OnModuleInit {
     // Apply visibility filter
     if (accessibleIds !== 'all') {
       if (accessibleIds.length > 0) {
-        qb.andWhere('(e.id IN (:...accessibleIds) OR e.uploadedById = :userId)', { accessibleIds, userId });
+        qb.andWhere('(e.id IN (:...accessibleIds) OR e."uploadedById" = :userId)', { accessibleIds, userId });
       } else {
-        qb.andWhere('e.uploadedById = :userId', { userId });
+        qb.andWhere('e."uploadedById" = :userId', { userId });
       }
     }
 
     if (filters?.objectId) {
-      qb.andWhere('e.objectId = :objectId', { objectId: filters.objectId });
+      qb.andWhere('e."objectId" = :objectId::uuid', { objectId: filters.objectId });
     }
     if (filters?.search?.trim()) {
       qb.andWhere('e.filename ILIKE :search', { search: `%${filters.search.trim()}%` });

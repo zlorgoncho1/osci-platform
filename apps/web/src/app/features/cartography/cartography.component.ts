@@ -378,7 +378,15 @@ export class CartographyComponent implements OnInit, OnDestroy {
   allObjects: any[] = [];
 
   // View
-  viewMode: 'graph' | 'table' = 'graph';
+  private _viewMode: 'graph' | 'table' = 'graph';
+  get viewMode(): 'graph' | 'table' { return this._viewMode; }
+  set viewMode(v: 'graph' | 'table') {
+    this._viewMode = v;
+    if (v === 'graph') {
+      // Wait for ViewChild to resolve after *ngIf recreates the component
+      setTimeout(() => this.pushToGraph());
+    }
+  }
   currentLayout = 'cose';
 
   // Search

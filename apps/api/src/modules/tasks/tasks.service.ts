@@ -94,26 +94,26 @@ export class TasksService {
     // Apply visibility filter
     if (accessibleIds !== 'all') {
       if (accessibleIds.length > 0) {
-        qb.andWhere('(t.id IN (:...accessibleIds) OR t.createdById = :userId)', { accessibleIds, userId });
+        qb.andWhere('(t.id = ANY(:accessibleIds::uuid[]) OR t."createdById" = :userId::uuid)', { accessibleIds, userId });
       } else {
-        qb.andWhere('t.createdById = :userId', { userId });
+        qb.andWhere('t."createdById" = :userId::uuid', { userId });
       }
     }
 
     if (filters?.status) qb.andWhere('t.status = :status', { status: filters.status });
-    if (filters?.assignedToId) qb.andWhere('t.assignedToId = :assignedToId', { assignedToId: filters.assignedToId });
-    if (filters?.objectId) qb.andWhere('t.objectId = :objectId', { objectId: filters.objectId });
-    if (filters?.projectId) qb.andWhere('t.projectId = :projectId', { projectId: filters.projectId });
-    if (filters?.parentTaskId) qb.andWhere('t.parentTaskId = :parentTaskId', { parentTaskId: filters.parentTaskId });
+    if (filters?.assignedToId) qb.andWhere('t."assignedToId" = :assignedToId', { assignedToId: filters.assignedToId });
+    if (filters?.objectId) qb.andWhere('t."objectId" = :objectId::uuid', { objectId: filters.objectId });
+    if (filters?.projectId) qb.andWhere('t."projectId" = :projectId::uuid', { projectId: filters.projectId });
+    if (filters?.parentTaskId) qb.andWhere('t."parentTaskId" = :parentTaskId::uuid', { parentTaskId: filters.parentTaskId });
     if (filters?.checklistId) {
       qb.andWhere(
-        `t.checklistRunItemId IN (SELECT ri.id FROM checklist_run_items ri INNER JOIN checklist_runs cr ON ri."checklistRunId" = cr.id WHERE cr."checklistId" = :checklistId)`,
+        `t."checklistRunItemId" IN (SELECT ri.id FROM checklist_run_items ri INNER JOIN checklist_runs cr ON ri."checklistRunId" = cr.id WHERE cr."checklistId" = :checklistId::uuid)`,
         { checklistId: filters.checklistId },
       );
     }
     if (filters?.objectGroupId) {
       qb.andWhere(
-        `t.objectId IN (SELECT gom."objectId" FROM object_group_members gom WHERE gom."groupId" = :objectGroupId)`,
+        `t."objectId" IN (SELECT gom."objectId" FROM object_group_members gom WHERE gom."groupId" = :objectGroupId::uuid)`,
         { objectGroupId: filters.objectGroupId },
       );
     }
@@ -147,35 +147,35 @@ export class TasksService {
       .leftJoinAndSelect('t.project', 'project')
       .leftJoinAndSelect('t.children', 'children')
       .where(
-        `(t.assignedToId = :cuid OR t.leadId = :cuid OR t.id IN (SELECT tc."taskId" FROM task_concerned tc WHERE tc."userId" = :cuid))`,
-        { cuid },
+        `(t."assignedToId" = :cuidStr OR t."leadId" = :cuidStr OR t.id IN (SELECT tc."taskId" FROM task_concerned tc WHERE tc."userId" = :cuidUuid::uuid))`,
+        { cuidStr: cuid, cuidUuid: cuid },
       )
       .orderBy('t.createdAt', 'DESC');
 
     // Apply visibility filter
     if (accessibleIds !== 'all') {
       if (accessibleIds.length > 0) {
-        qb.andWhere('(t.id IN (:...accessibleIds) OR t.createdById = :visUserId)', { accessibleIds, visUserId: userId });
+        qb.andWhere('(t.id = ANY(:accessibleIds::uuid[]) OR t."createdById" = :visUserId::uuid)', { accessibleIds, visUserId: userId });
       } else {
-        qb.andWhere('t.createdById = :visUserId', { visUserId: userId });
+        qb.andWhere('t."createdById" = :visUserId::uuid', { visUserId: userId });
       }
     }
 
     if (filters.status) qb.andWhere('t.status = :status', { status: filters.status });
-    if (filters.objectId) qb.andWhere('t.objectId = :objectId', { objectId: filters.objectId });
-    if (filters.projectId) qb.andWhere('t.projectId = :projectId', { projectId: filters.projectId });
-    if (filters.assignedToId) qb.andWhere('t.assignedToId = :assignedToId', { assignedToId: filters.assignedToId });
-    if (filters.parentTaskId) qb.andWhere('t.parentTaskId = :parentTaskId', { parentTaskId: filters.parentTaskId });
+    if (filters.objectId) qb.andWhere('t."objectId" = :objectId::uuid', { objectId: filters.objectId });
+    if (filters.projectId) qb.andWhere('t."projectId" = :projectId::uuid', { projectId: filters.projectId });
+    if (filters.assignedToId) qb.andWhere('t."assignedToId" = :assignedToId', { assignedToId: filters.assignedToId });
+    if (filters.parentTaskId) qb.andWhere('t."parentTaskId" = :parentTaskId::uuid', { parentTaskId: filters.parentTaskId });
 
     if (filters.checklistId) {
       qb.andWhere(
-        `t.checklistRunItemId IN (SELECT ri.id FROM checklist_run_items ri INNER JOIN checklist_runs cr ON ri."checklistRunId" = cr.id WHERE cr."checklistId" = :checklistId)`,
+        `t."checklistRunItemId" IN (SELECT ri.id FROM checklist_run_items ri INNER JOIN checklist_runs cr ON ri."checklistRunId" = cr.id WHERE cr."checklistId" = :checklistId::uuid)`,
         { checklistId: filters.checklistId },
       );
     }
     if (filters.objectGroupId) {
       qb.andWhere(
-        `t.objectId IN (SELECT gom."objectId" FROM object_group_members gom WHERE gom."groupId" = :objectGroupId)`,
+        `t."objectId" IN (SELECT gom."objectId" FROM object_group_members gom WHERE gom."groupId" = :objectGroupId::uuid)`,
         { objectGroupId: filters.objectGroupId },
       );
     }
@@ -191,7 +191,7 @@ export class TasksService {
       .createQueryBuilder()
       .select('gom.objectId')
       .from('object_group_members', 'gom')
-      .where('gom.groupId = :groupId', { groupId })
+      .where('gom."groupId" = :groupId::uuid', { groupId })
       .getRawMany();
     return members.map((m: { objectId: string }) => m.objectId);
   }

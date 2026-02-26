@@ -158,6 +158,9 @@ services:
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-osci}
       API_PORT: ${API_PORT}
       API_CORS_ORIGIN: ${API_CORS_ORIGIN}
+      TRUST_PROXY: ${TRUST_PROXY}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      EXPOSE_ERROR_DETAILS: ${EXPOSE_ERROR_DETAILS:-false}
     ports:
       - "${API_PORT}:3000"
     depends_on:

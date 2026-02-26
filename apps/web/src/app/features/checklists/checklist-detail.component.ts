@@ -638,38 +638,15 @@ export class ChecklistDetailComponent implements OnInit {
       next: () => {
         const items = this.checklist.items || [];
         const deletions = this.pendingItemDeletions;
-        let pending = items.length + deletions.length;
 
-        if (pending === 0) {
-          this.isEditing = false;
-          this.pendingItemDeletions = [];
-          this.loadChecklist();
-          return;
-        }
-
-        const done = () => {
-          if (--pending === 0) {
-            this.isEditing = false;
-            this.pendingItemDeletions = [];
-            this.loadChecklist();
-          }
-        };
-
-        // Process deletions
-        for (const itemId of deletions) {
-          this.api.deleteChecklistItem(this.checklistId, itemId).subscribe({
-            next: done,
-            error: done,
-          });
-        }
-
-        // Process item updates/creates
-        for (const item of items) {
+        // Build batch payload
+        const syncItems = items.map((item: any) => {
           const payload: any = {
             question: item.question,
             itemType: item.itemType,
             weight: item.weight,
           };
+          if (item.id) payload.id = item.id;
           if (item.frameworkControlId) {
             payload.frameworkControlId = item.frameworkControlId;
           } else {
@@ -677,12 +654,31 @@ export class ChecklistDetailComponent implements OnInit {
             payload.referenceType = item.referenceType || null;
             payload.reference = item.reference || null;
           }
-          if (item.id) {
-            this.api.updateChecklistItem(this.checklistId, item.id, payload).subscribe({ next: done, error: done });
-          } else {
-            this.api.addChecklistItem(this.checklistId, payload).subscribe({ next: done, error: done });
-          }
+          return payload;
+        });
+
+        if (syncItems.length === 0 && deletions.length === 0) {
+          this.isEditing = false;
+          this.pendingItemDeletions = [];
+          this.loadChecklist();
+          return;
         }
+
+        this.api.syncChecklistItems(this.checklistId, {
+          deletions,
+          items: syncItems,
+        }).subscribe({
+          next: () => {
+            this.isEditing = false;
+            this.pendingItemDeletions = [];
+            this.loadChecklist();
+          },
+          error: () => {
+            this.isEditing = false;
+            this.pendingItemDeletions = [];
+            this.loadChecklist();
+          },
+        });
       },
       error: (err) => console.error('[OSCI] Failed to update checklist:', err),
     });

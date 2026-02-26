@@ -33,9 +33,9 @@ export class IntegrationsService {
       .orderBy('i.createdAt', 'DESC');
 
     if (accessibleIds.length > 0) {
-      qb.where('(i.id IN (:...accessibleIds) OR i.createdById = :userId)', { accessibleIds, userId });
+      qb.where('(i.id IN (:...accessibleIds) OR i."createdById" = :userId::uuid)', { accessibleIds, userId });
     } else {
-      qb.where('i.createdById = :userId', { userId });
+      qb.where('i."createdById" = :userId::uuid', { userId });
     }
 
     return qb.getMany();

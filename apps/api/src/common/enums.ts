@@ -216,3 +216,29 @@ export enum Action {
   Export = 'export',
   Manage = 'manage',
 }
+
+/**
+ * Action hierarchy: each action implicitly grants the actions listed here.
+ * manage → all actions ; create/update/delete/export → read
+ */
+const ACTION_IMPLIES: Record<string, string[]> = {
+  [Action.Manage]: [Action.Read, Action.Create, Action.Update, Action.Delete, Action.Export],
+  [Action.Create]: [Action.Read],
+  [Action.Update]: [Action.Read],
+  [Action.Delete]: [Action.Read],
+  [Action.Export]: [Action.Read],
+  [Action.Read]: [],
+};
+
+/**
+ * Returns true if at least one of the granted actions satisfies the required action,
+ * either directly or through the implicit hierarchy.
+ */
+export function actionSatisfies(grantedActions: string[], requiredAction: string): boolean {
+  for (const granted of grantedActions) {
+    if (granted === requiredAction) return true;
+    const implied = ACTION_IMPLIES[granted];
+    if (implied && implied.includes(requiredAction)) return true;
+  }
+  return false;
+}

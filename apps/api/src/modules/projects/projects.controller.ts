@@ -36,7 +36,7 @@ export class ProjectsController {
     @CurrentUser() user: { userId: string },
     @Query('status') status?: ProjectStatus,
     @Query('ownerId') ownerId?: string,
-    @Query('concernedUserId') concernedUserId?: string,
+    @Query('concernedUserId', new ParseUUIDPipe({ optional: true })) concernedUserId?: string,
   ) {
     return this.projectsService.findAll(user.userId, { status, ownerId, concernedUserId });
   }

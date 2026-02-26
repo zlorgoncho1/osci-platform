@@ -428,7 +428,7 @@ export class ReferentielDetailComponent implements OnInit {
         this.referentiel = ref;
         this.filteredControls = ref.controls || [];
         this.loadStats();
-        (ref.controls || []).forEach((c: any) => this.loadMappedCount(c.id));
+        this.loadMappedCounts();
       },
       error: () => {
         this.error = 'Referentiel not found';
@@ -457,9 +457,9 @@ export class ReferentielDetailComponent implements OnInit {
     });
   }
 
-  loadMappedCount(controlId: string): void {
-    this.api.getMappedChecklistItems(this.referentielId, controlId).subscribe({
-      next: (items) => (this.controlMappedCount[controlId] = items?.length || 0),
+  loadMappedCounts(): void {
+    this.api.getReferentielMappedCounts(this.referentielId).subscribe({
+      next: (counts) => (this.controlMappedCount = counts || {}),
     });
   }
 

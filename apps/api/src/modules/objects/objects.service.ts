@@ -34,9 +34,9 @@ export class ObjectsService {
 
     if (accessibleIds !== 'all') {
       if (accessibleIds.length === 0) {
-        qb.where('o.createdById = :userId', { userId });
+        qb.where('o."createdById" = :userId::uuid', { userId });
       } else {
-        qb.where('(o.id IN (:...accessibleIds) OR o.createdById = :userId)', {
+        qb.where('(o.id IN (:...accessibleIds) OR o."createdById" = :userId::uuid)', {
           accessibleIds,
           userId,
         });
@@ -47,7 +47,7 @@ export class ObjectsService {
       qb.andWhere('o.type = :type', { type: filters.type });
     }
     if (filters?.parentId) {
-      qb.andWhere('o.parentId = :parentId', { parentId: filters.parentId });
+      qb.andWhere('o."parentId" = :parentId::uuid', { parentId: filters.parentId });
     }
 
     return qb.getMany();

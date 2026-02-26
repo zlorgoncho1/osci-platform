@@ -123,6 +123,13 @@ export class ReferentielsController {
     return this.referentielsService.findControlsByReferentiel(id);
   }
 
+  @Get(':id/controls/mapped-counts')
+  async getMappedCounts(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<Record<string, number>> {
+    return this.referentielsService.getMappedCountsByReferentiel(id);
+  }
+
   @Post(':id/controls')
   async createControl(
     @Param('id', ParseUUIDPipe) id: string,

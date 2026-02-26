@@ -10,6 +10,29 @@ import { tap } from 'rxjs/operators';
 import { AuditService } from '../../modules/audit/audit.service';
 
 /**
+ * Returns the client IP from the request, preferring proxy headers when present.
+ * Order: X-Forwarded-For (first IP) → X-Real-IP → request.ip.
+ */
+function getClientIp(request: {
+  ip?: string;
+  headers?: { [key: string]: string | string[] | undefined };
+}): string | null {
+  const forwarded = request.headers?.['x-forwarded-for'];
+  if (forwarded) {
+    const first = typeof forwarded === 'string' ? forwarded.split(',')[0] : forwarded[0];
+    const ip = first?.trim();
+    if (ip) return ip;
+  }
+  const realIp = request.headers?.['x-real-ip'];
+  if (realIp) {
+    const ip = typeof realIp === 'string' ? realIp.trim() : realIp[0]?.trim();
+    if (ip) return ip;
+  }
+  if (request.ip) return request.ip;
+  return null;
+}
+
+/**
  * Maps HTTP method + route path to a semantic action label.
  * These labels match the filter dropdown in the frontend audit UI.
  */
@@ -64,7 +87,7 @@ export class AuditInterceptor implements NestInterceptor {
     path: string,
     user: { sub?: string } | undefined,
     params: Record<string, string>,
-    request: { ip?: string; body?: unknown },
+    request: { ip?: string; body?: unknown; headers?: { [key: string]: string | string[] | undefined } },
   ): Promise<void> {
     const action = deriveSemanticAction(method, path);
     const actorId = user?.sub || 'anonymous';
@@ -92,7 +115,7 @@ export class AuditInterceptor implements NestInterceptor {
       objectType,
       objectId,
       context: contextData,
-      ipAddress: request.ip || null,
+      ipAddress: getClientIp(request) ?? null,
     });
   }
 }

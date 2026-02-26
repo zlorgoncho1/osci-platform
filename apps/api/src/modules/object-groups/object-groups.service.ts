@@ -35,9 +35,9 @@ export class ObjectGroupsService {
 
     if (accessibleIds !== 'all') {
       if (accessibleIds.length === 0) {
-        qb.where('g.createdById = :userId', { userId });
+        qb.where('g."createdById" = :userId::uuid', { userId });
       } else {
-        qb.where('(g.id IN (:...accessibleIds) OR g.createdById = :userId)', {
+        qb.where('(g.id IN (:...accessibleIds) OR g."createdById" = :userId::uuid)', {
           accessibleIds,
           userId,
         });
